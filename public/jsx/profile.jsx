@@ -107,13 +107,26 @@ function Row({ label, value, last }) {
 }
 
 function EditMetric({ label, k, min, max, unit, p, set }) {
+  const val = p[k];
+  const btnSt = (disabled) => ({
+    width: 44, height: 44, borderRadius: 14, border: 'none', cursor: disabled ? 'default' : 'pointer',
+    background: disabled ? 'var(--track)' : 'var(--card)',
+    boxShadow: disabled ? 'none' : '0 2px 8px -4px rgba(0,0,0,.2)',
+    fontSize: 22, color: disabled ? 'var(--ink-soft)' : 'var(--ink)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    WebkitUserSelect: 'none', userSelect: 'none', flexShrink: 0,
+  });
   return (
-    <div style={{ marginBottom: 18 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-        <span style={{ fontSize: 14.5, color: 'var(--ink)', fontWeight: 500 }}>{label}</span>
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--green-deep)' }}>{p[k]}<span style={{ fontSize: 12, color: 'var(--ink-soft)', marginInlineStart: 3 }}>{unit}</span></span>
+    <div style={{ marginBottom: 14, background: 'var(--bg)', borderRadius: 16, padding: '12px 14px' }}>
+      <div style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 500, marginBottom: 10 }}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <button style={btnSt(val <= min)} onClick={() => set(k, Math.max(min, val - 1))}>−</button>
+        <div style={{ textAlign: 'center', flex: 1 }}>
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: 32, color: 'var(--green-deep)' }}>{val}</span>
+          <span style={{ fontSize: 13, color: 'var(--ink-soft)', marginInlineStart: 4 }}>{unit}</span>
+        </div>
+        <button style={btnSt(val >= max)} onClick={() => set(k, Math.min(max, val + 1))}>+</button>
       </div>
-      <input type="range" min={min} max={max} value={p[k]} onChange={e => set(k, +e.target.value)} className="kp-slider" />
     </div>
   );
 }

@@ -104,15 +104,39 @@ function Onboarding({ onComplete }) {
 
   // step 3: body metrics
   if (step === 3) {
-    const Metric = ({ label, k, min, max, unit, step = 1 }) => (
-      <div style={{ marginBottom: 26 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
-          <span style={{ fontSize: 16, color: 'var(--ink)', fontWeight: 500 }}>{label}</span>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 26, color: 'var(--green-deep)' }}>{p[k]}<span style={{ fontSize: 14, color: 'var(--ink-soft)', marginInlineStart: 4 }}>{unit}</span></span>
+    const Metric = ({ label, k, min, max, unit, stp = 1 }) => {
+      const val = p[k];
+      const dec = () => set(k, Math.max(min, val - stp));
+      const inc = () => set(k, Math.min(max, val + stp));
+      const btnStyle = (disabled) => ({
+        width: 52, height: 52, borderRadius: 16, border: 'none', cursor: disabled ? 'default' : 'pointer',
+        background: disabled ? 'var(--track)' : 'var(--card)',
+        boxShadow: disabled ? 'none' : '0 2px 10px -5px rgba(0,0,0,.25)',
+        fontSize: 26, fontWeight: 400, color: disabled ? 'var(--ink-soft)' : 'var(--ink)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        WebkitUserSelect: 'none', userSelect: 'none', flexShrink: 0,
+        transition: 'transform .08s',
+      });
+      return (
+        <div style={{ marginBottom: 22, background: 'var(--card)', borderRadius: 20, padding: '16px 18px', boxShadow: 'inset 0 0 0 1.5px var(--line)' }}>
+          <div style={{ fontSize: 13.5, color: 'var(--ink-soft)', fontWeight: 500, marginBottom: 14 }}>{label}</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <button style={btnStyle(val <= min)} onClick={dec}
+              onPointerDown={e => { e.currentTarget.style.transform = 'scale(.9)'; }}
+              onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+              onPointerLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}>−</button>
+            <div style={{ textAlign: 'center', flex: 1 }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 42, color: 'var(--green-deep)', lineHeight: 1 }}>{val}</span>
+              <span style={{ fontSize: 14, color: 'var(--ink-soft)', marginInlineStart: 5 }}>{unit}</span>
+            </div>
+            <button style={btnStyle(val >= max)} onClick={inc}
+              onPointerDown={e => { e.currentTarget.style.transform = 'scale(.9)'; }}
+              onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+              onPointerLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}>+</button>
+          </div>
         </div>
-        <input type="range" min={min} max={max} step={step} value={p[k]} onChange={e => set(k, +e.target.value)} className="kp-slider" />
-      </div>
-    );
+      );
+    };
     return (
       <Shell title="קצת נתונים עלייך" sub="הזיני גיל, גובה ומשקל מדויקים ככל האפשר" canNext onNext={next}>
         <Metric label="גיל" k="age" min={14} max={90} unit="שנים" />
