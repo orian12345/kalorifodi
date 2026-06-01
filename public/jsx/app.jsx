@@ -146,6 +146,14 @@ function AddBtn({ onClick }) {
 }
 
 function Root() {
+  const isMobile = window.innerWidth <= 500;
+  if (isMobile) {
+    return (
+      <div style={{ width: '100%', height: '100dvh', overflow: 'hidden', background: 'var(--bg)' }}>
+        <App />
+      </div>
+    );
+  }
   return (
     <div id="deviceWrap">
       <IOSDevice>
