@@ -2,11 +2,10 @@
    קלוריפודי — Add food sheet (camera+AI / search / manual)
    ============================================================ */
 function AddFood({ defaultMeal, onClose, onAdd }) {
-  const [tab, setTab] = React.useState('camera');
-  const [confirm, setConfirm] = React.useState(null); // base food to confirm
+  const [tab, setTab] = React.useState('search');
+  const [confirm, setConfirm] = React.useState(null);
 
   const tabs = [
-    { id: 'camera', label: 'צילום', icon: Icon.camera },
     { id: 'search', label: 'חיפוש', icon: Icon.search },
     { id: 'manual', label: 'ידני', icon: Icon.edit },
   ];
@@ -45,7 +44,6 @@ function AddFood({ defaultMeal, onClose, onAdd }) {
 
         {/* body */}
         <div style={{ flex: 1, overflow: 'auto', padding: '16px 20px 28px' }}>
-          {tab === 'camera' && <CameraTab onPick={setConfirm} onAddMany={() => {}} onAdd={onAdd} defaultMeal={defaultMeal} onClose={onClose} />}
           {tab === 'search' && <SearchTab onPick={setConfirm} />}
           {tab === 'manual' && <ManualTab onPick={setConfirm} />}
         </div>
@@ -79,7 +77,7 @@ function SearchTab({ onPick }) {
             <div style={{ width: 30, height: 30, borderRadius: 10, background: 'var(--green-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon.plus s={18} c="var(--green-deep)" /></div>
           </button>
         ))}
-        {list.length === 0 && <div style={{ textAlign: 'center', color: 'var(--ink-soft)', padding: '30px 0', fontSize: 14 }}>לא נמצא מאכל — נסי להוסיף ידנית או בצילום</div>}
+        {list.length === 0 && <div style={{ textAlign: 'center', color: 'var(--ink-soft)', padding: '30px 0', fontSize: 14 }}>לא נמצא מאכל — נסי להוסיף ידנית</div>}
       </div>
     </div>
   );
