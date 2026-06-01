@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>קלוריפודי — פאנל ניהול</title>
+<style>
+  :root {
+    --green: #84A95C; --green-soft: #EAF1DF; --green-deep: #5E7E3E;
+    --pink: #E78BA0;  --pink-soft: #FCE7EC;
+    --ink: #43403C;   --ink-soft: #A39C95;
+    --bg: #F5F3F0;    --card: #fff;
+    --border: #EDE9E4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: var(--bg); color: var(--ink); direction: rtl; }
+
+  /* Login */
+  #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  .login-card {
+    background: var(--card); border-radius: 20px; padding: 40px 32px;
+    width: 340px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); text-align: center;
+  }
+  .login-card h1 { font-size: 24px; color: var(--green-deep); margin-bottom: 6px; }
+  .login-card p  { font-size: 13px; color: var(--ink-soft); margin-bottom: 24px; }
+
+  /* App layout */
+  #app-screen { display: none; min-height: 100vh; }
+  .sidebar {
+    position: fixed; top: 0; right: 0; bottom: 0; width: 220px;
+    background: var(--card); border-left: 1px solid var(--border);
+    padding: 24px 16px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .sidebar-logo { font-size: 22px; font-weight: 700; color: var(--green-deep); margin-bottom: 20px; padding: 0 8px; }
+  .nav-link {
+    padding: 10px 14px; border-radius: 12px; cursor: pointer;
+    font-size: 14px; font-weight: 500; color: var(--ink-soft);
+    transition: all .2s; border: none; background: transparent;
+    text-align: right; width: 100%; display: block;
+  }
+  .nav-link:hover  { background: var(--green-soft); color: var(--green-deep); }
+  .nav-link.active { background: var(--green-soft); color: var(--green-deep); font-weight: 700; }
+  .main-content { margin-right: 220px; padding: 32px; }
+
+  /* Common */
+  input, button { font-family: inherit; }
+  .input {
+    width: 100%; padding: 12px 16px; border: 1.5px solid var(--border);
+    border-radius: 12px; font-size: 15px; color: var(--ink); background: var(--bg);
+    outline: none; transition: border-color .2s; margin-bottom: 12px;
+  }
+  .input:focus { border-color: var(--green); }
+  .btn {
+    padding: 12px 20px; border: none; border-radius: 12px;
+    font-size: 15px; font-weight: 600; cursor: pointer; transition: all .2s;
+  }
+  .btn-green { background: var(--green); color: white; width: 100%; }
+  .btn-green:hover { background: var(--green-deep); }
+  .btn-sm { padding: 6px 14px; font-size: 13px; }
+  .btn-danger { background: var(--pink-soft); color: var(--pink); }
+  .btn-danger:hover { background: var(--pink); color: white; }
+
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--card); border-radius: 16px; padding: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  }
+  .stat-card .val { font-size: 36px; font-weight: 700; color: var(--green-deep); }
+  .stat-card .lbl { font-size: 13px; color: var(--ink-soft); margin-top: 4px; }
+
+  /* Table */
+  .table-card { background: var(--card); border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,.06); overflow: hidden; }
+  .table-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .table-header h2 { font-size: 16px; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 12px 16px; font-size: 12px; font-weight: 600; color: var(--ink-soft); text-align: right; background: var(--bg); border-bottom: 1px solid var(--border); }
+  td { padding: 13px 16px; font-size: 14px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #FAFAF8; }
+
+  /* User detail modal */
+  .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100; align-items: center; justify-content: center; }
+  .modal-backdrop.open { display: flex; }
+  .modal-box { background: var(--card); border-radius: 20px; padding: 28px; width: 640px; max-width: 95vw; max-height: 85vh; overflow-y: auto; }
+  .modal-box h3 { font-size: 18px; margin-bottom: 16px; }
+
+  /* Progress bar */
+  .prog-bar-wrap { height: 10px; background: var(--border); border-radius: 10px; overflow: hidden; margin-top: 6px; }
+  .prog-bar-fill { height: 100%; border-radius: 10px; transition: width .4s; }
+  .day-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--bg); border-radius: 10px; margin-bottom: 6px; font-size: 13px; }
+  .day-row .day-date { min-width: 90px; color: var(--ink-soft); }
+  .day-row .day-bar  { flex: 1; }
+  .day-row .day-kcal { min-width: 80px; text-align: left; font-weight: 600; }
+  .summary-strip { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 20px; }
+  .sum-card { background: var(--green-soft); border-radius: 12px; padding: 12px; text-align: center; }
+  .sum-card .sv { font-size: 22px; font-weight: 700; color: var(--green-deep); }
+  .sum-card .sl { font-size: 11px; color: var(--green-deep); margin-top: 2px; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .error-msg { color: #CC647D; font-size: 13px; background: var(--pink-soft); padding: 10px 14px; border-radius: 10px; margin-bottom: 12px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .badge-green { background: var(--green-soft); color: var(--green-deep); }
+  .badge-pink  { background: var(--pink-soft);  color: var(--pink-deep); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div style="font-size:48px;margin-bottom:12px">🥑</div>
+    <h1>פאנל ניהול</h1>
+    <p>קלוריפודי — Admin</p>
+    <input type="password" id="admin-pass" class="input" placeholder="סיסמת מנהל..." onkeydown="if(event.key==='Enter')doAdminLogin()" />
+    <div id="login-err" class="error-msg" style="display:none"></div>
+    <button class="btn btn-green" onclick="doAdminLogin()">כניסה</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app-screen">
+  <div class="sidebar">
+    <div class="sidebar-logo">🥑 קלוריפודי</div>
+    <button class="nav-link active" onclick="showPage('dashboard',this)">📊 דשבורד</button>
+    <button class="nav-link" onclick="showPage('users',this)">👥 משתמשים</button>
+    <button class="nav-link" onclick="showPage('create',this)">➕ משתמש חדש</button>
+    <div style="flex:1"></div>
+    <button class="nav-link" onclick="doLogout()" style="color:#CC647D">🚪 יציאה</button>
+  </div>
+
+  <div class="main-content">
+
+    <!-- Dashboard page -->
+    <div id="page-dashboard" class="page active">
+      <h1 style="font-size:24px;margin-bottom:6px">דשבורד</h1>
+      <p style="color:var(--ink-soft);font-size:14px;margin-bottom:24px">סיכום מצב המערכת</p>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="val" id="stat-users">—</div>
+          <div class="lbl">סה"כ משתמשים</div>
+        </div>
+        <div class="stat-card">
+          <div class="val" id="stat-active">—</div>
+          <div class="lbl">פעילים היום</div>
+        </div>
+        <div class="stat-card">
+          <div class="val" id="stat-logs">—</div>
+          <div class="lbl">סה"כ יומני אכילה</div>
+        </div>
+      </div>
+      <div class="table-card">
+        <div class="table-header">
+          <h2>משתמשים אחרונים</h2>
+          <button class="btn btn-sm" onclick="loadDashboard()" style="background:var(--green-soft);color:var(--green-deep)">🔄 רענן</button>
+        </div>
+        <table>
+          <thead><tr><th>שם</th><th>שם משתמש</th><th>נרשם</th><th>פרופיל</th></tr></thead>
+          <tbody id="recent-users"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Create user page -->
+    <div id="page-create" class="page">
+      <h1 style="font-size:24px;margin-bottom:6px">➕ משתמש חדש</h1>
+      <p style="color:var(--ink-soft);font-size:14px;margin-bottom:28px">רק מנהלת יכולה ליצור משתמשים — אין הרשמה ציבורית</p>
+      <div style="max-width:420px">
+        <div class="table-card" style="padding:28px">
+          <div class="form-group">
+            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--ink-soft)">שם מלא</label>
+            <input type="text"     id="new-name" class="input" placeholder="למשל: שרה כהן" />
+          </div>
+          <div class="form-group">
+            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--ink-soft)">שם משתמש (לכניסה)</label>
+            <input type="text"     id="new-user" class="input" placeholder="אנגלית בלבד, לפחות 3 תווים" />
+          </div>
+          <div class="form-group">
+            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--ink-soft)">סיסמה</label>
+            <input type="password" id="new-pass" class="input" placeholder="לפחות 4 תווים" />
+          </div>
+          <div id="create-err" class="error-msg" style="display:none"></div>
+          <div id="create-ok"  style="display:none;background:var(--green-soft);color:var(--green-deep);border-radius:12px;padding:12px 16px;font-size:14px;font-weight:600;margin-bottom:12px;text-align:center"></div>
+          <button class="btn btn-green" onclick="createUser()">✅ צור משתמש</button>
+        </div>
+
+        <div style="margin-top:20px;background:var(--bg);border-radius:14px;padding:16px;font-size:13px;color:var(--ink-soft);line-height:1.7">
+          <strong style="color:var(--ink)">💡 איך זה עובד:</strong><br>
+          1. צרי כאן חשבון לחברתך<br>
+          2. שלחי לה את שם המשתמש + הסיסמה<br>
+          3. היא תיכנס עם זה ותגדיר את הפרופיל שלה<br>
+          4. הנתונים שלה יישמרו בנפרד מהנתונים שלך
+        </div>
+      </div>
+    </div>
+
+    <!-- Users page -->
+    <div id="page-users" class="page">
+      <h1 style="font-size:24px;margin-bottom:6px">משתמשים</h1>
+      <p style="color:var(--ink-soft);font-size:14px;margin-bottom:24px">ניהול כלל המשתמשים במערכת</p>
+      <div class="table-card">
+        <div class="table-header">
+          <h2>כל המשתמשים</h2>
+          <button class="btn btn-sm" onclick="loadUsers()" style="background:var(--green-soft);color:var(--green-deep)">🔄 רענן</button>
+        </div>
+        <table>
+          <thead><tr><th>שם</th><th>שם משתמש</th><th>נרשם</th><th>מטרה</th><th>פעולות</th></tr></thead>
+          <tbody id="users-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- User detail modal -->
+<div class="modal-backdrop" id="user-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 id="modal-title">פרטי משתמש</h3>
+      <button onclick="closeModal()" style="border:none;background:none;font-size:20px;cursor:pointer;color:var(--ink-soft)">✕</button>
+    </div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script>
+let adminToken = null;
+
+async function api(method, url, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(url, opts);
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || 'שגיאה');
+  return d;
+}
+
+async function doAdminLogin() {
+  const pass = document.getElementById('admin-pass').value;
+  const errEl = document.getElementById('login-err');
+  errEl.style.display = 'none';
+  try {
+    const d = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pass })
+    });
+    const data = await d.json();
+    if (!d.ok) throw new Error(data.error);
+    adminToken = data.token;
+    sessionStorage.setItem('admin_token', adminToken);
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    loadDashboard();
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('admin_token');
+  location.reload();
+}
+
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'users') loadUsers();
+}
+
+async function loadDashboard() {
+  try {
+    const stats = await api('GET', '/api/admin/stats');
+    document.getElementById('stat-users').textContent  = stats.totalUsers;
+    document.getElementById('stat-active').textContent = stats.activeToday;
+    document.getElementById('stat-logs').textContent   = stats.totalLogs;
+
+    const users = await api('GET', '/api/admin/users');
+    const tbody = document.getElementById('recent-users');
+    tbody.innerHTML = users.slice(0, 10).map(u => `
+      <tr>
+        <td><strong>${u.name}</strong></td>
+        <td style="color:var(--ink-soft)">@${u.username}</td>
+        <td style="color:var(--ink-soft)">${new Date(u.created_at * 1000).toLocaleDateString('he-IL')}</td>
+        <td>${u.profile ? '<span class="badge badge-green">✓ הוגדר</span>' : '<span class="badge badge-pink">לא הוגדר</span>'}</td>
+      </tr>
+    `).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function loadUsers() {
+  try {
+    const users = await api('GET', '/api/admin/users');
+    const GOALS = { lose: 'ירידה במשקל', maintain: 'שמירה', gain: 'בניית שריר' };
+    const tbody = document.getElementById('users-table');
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td><strong>${u.name}</strong></td>
+        <td style="color:var(--ink-soft)">@${u.username}</td>
+        <td style="color:var(--ink-soft)">${new Date(u.created_at * 1000).toLocaleDateString('he-IL')}</td>
+        <td>${u.profile ? GOALS[u.profile.goal] || '-' : '—'}</td>
+        <td>
+          <button class="btn btn-sm" onclick="viewUser(${u.id},'${u.name}')"
+            style="background:var(--green-soft);color:var(--green-deep);margin-left:6px">פרטים</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id},'${u.name}')">מחק</button>
+        </td>
+      </tr>
+    `).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function viewUser(id, name) {
+  document.getElementById('modal-title').textContent = '📊 ' + name;
+  document.getElementById('modal-content').innerHTML = '<p style="color:var(--ink-soft)">טוען...</p>';
+  document.getElementById('user-modal').classList.add('open');
+  try {
+    const [userList, logs] = await Promise.all([
+      api('GET', '/api/admin/users'),
+      api('GET', `/api/admin/users/${id}/logs`)
+    ]);
+    const user = userList.find(u => u.id === id);
+    const p = user?.profile;
+    const GOALS = { lose:'ירידה במשקל', maintain:'שמירה על משקל', gain:'עלייה במסת שריר' };
+    const ACT   = { sedentary:'יושבני', light:'קל', moderate:'בינוני', active:'פעיל', athlete:'ספורטיבי' };
+    const targetKcal = p?.targets?.calories || 0;
+
+    // compute summary stats
+    const daysLogged = logs.length;
+    const totals = logs.map(l => l.foods.reduce((s,f) => s + (f.kcal||0) * (f.qty||1), 0));
+    const avgKcal = daysLogged ? Math.round(totals.reduce((a,b)=>a+b,0) / daysLogged) : 0;
+    const daysOnTarget = targetKcal
+      ? totals.filter(t => t <= targetKcal * 1.05).length
+      : null;
+    const avgWater = daysLogged
+      ? Math.round(logs.reduce((s,l) => s + (l.water||0), 0) / daysLogged * 10) / 10
+      : 0;
+
+    document.getElementById('modal-content').innerHTML = `
+      ${p ? `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">
+          <div style="background:var(--bg);border-radius:12px;padding:14px">
+            <div style="font-size:12px;color:var(--ink-soft)">גיל / גובה / משקל</div>
+            <div style="font-size:15px;font-weight:600;margin-top:4px">${p.age} שנה · ${p.height} ס"מ · ${p.weight} ק"ג</div>
+          </div>
+          <div style="background:var(--bg);border-radius:12px;padding:14px">
+            <div style="font-size:12px;color:var(--ink-soft)">מטרה / פעילות</div>
+            <div style="font-size:15px;font-weight:600;margin-top:4px">${GOALS[p.goal]||p.goal} · ${ACT[p.activity]||p.activity}</div>
+          </div>
+        </div>` : '<p style="color:var(--ink-soft);margin-bottom:16px">⚠️ לא הגדיר פרופיל עדיין</p>'}
+
+      <!-- Summary strip -->
+      <div class="summary-strip">
+        <div class="sum-card">
+          <div class="sv">${daysLogged}</div>
+          <div class="sl">ימים מתועדים</div>
+        </div>
+        <div class="sum-card">
+          <div class="sv">${avgKcal || '—'}</div>
+          <div class="sl">ממוצע קק"ל/יום</div>
+        </div>
+        <div class="sum-card">
+          <div class="sv">${targetKcal ? targetKcal : '—'}</div>
+          <div class="sl">יעד קק"ל</div>
+        </div>
+        <div class="sum-card">
+          <div class="sv">${daysOnTarget !== null ? daysOnTarget + '/' + daysLogged : '—'}</div>
+          <div class="sl">ימים ביעד</div>
+        </div>
+      </div>
+
+      <h4 style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--ink)">📅 יומן 30 ימים אחרונים</h4>
+      ${daysLogged === 0 ? '<p style="color:var(--ink-soft);font-size:13px">אין רשומות עדיין</p>' :
+        logs.map((l, i) => {
+          const total = Math.round(totals[i]);
+          const pct = targetKcal ? Math.min(100, Math.round(total / targetKcal * 100)) : 50;
+          const overTarget = targetKcal && total > targetKcal * 1.05;
+          const barColor = overTarget ? '#E78BA0' : '#84A95C';
+          const foods = l.foods.map(f => f.name).join(', ') || '—';
+          return `
+            <div class="day-row">
+              <div class="day-date">${l.date}</div>
+              <div class="day-bar">
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-soft);margin-bottom:3px">
+                  <span style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:260px" title="${foods}">${foods}</span>
+                  <span style="margin-right:4px">${l.water ? '💧' + l.water : ''}</span>
+                </div>
+                <div class="prog-bar-wrap">
+                  <div class="prog-bar-fill" style="width:${pct}%;background:${barColor}"></div>
+                </div>
+              </div>
+              <div class="day-kcal" style="color:${overTarget?'var(--pink-deep)':'var(--green-deep)'}">
+                ${total} קק"ל${targetKcal ? '<br><span style="font-size:10px;font-weight:400;color:var(--ink-soft)">' + pct + '%</span>' : ''}
+              </div>
+            </div>`;
+        }).join('')
+      }
+    `;
+  } catch(e) { document.getElementById('modal-content').innerHTML = '<p style="color:red">שגיאה בטעינה</p>'; }
+}
+
+async function createUser() {
+  const name = document.getElementById('new-name').value.trim();
+  const user = document.getElementById('new-user').value.trim().toLowerCase();
+  const pass = document.getElementById('new-pass').value;
+  const errEl = document.getElementById('create-err');
+  const okEl  = document.getElementById('create-ok');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+
+  if (!name || !user || !pass) {
+    errEl.textContent = 'אנא מלאי את כל השדות';
+    errEl.style.display = 'block'; return;
+  }
+  if (!/^[a-zA-Z0-9_]+$/.test(user)) {
+    errEl.textContent = 'שם משתמש: אנגלית ומספרים בלבד';
+    errEl.style.display = 'block'; return;
+  }
+  try {
+    await api('POST', '/api/auth/register', { username: user, password: pass, name });
+    okEl.textContent = `✅ המשתמש "${name}" נוצר! שם כניסה: ${user}`;
+    okEl.style.display = 'block';
+    document.getElementById('new-name').value = '';
+    document.getElementById('new-user').value = '';
+    document.getElementById('new-pass').value = '';
+    loadDashboard();
+  } catch(e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  }
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`למחוק את ${name} וכל הנתונים שלו?`)) return;
+  try {
+    await api('DELETE', `/api/admin/users/${id}`);
+    loadUsers(); loadDashboard();
+  } catch(e) { alert('שגיאה: ' + e.message); }
+}
+
+function closeModal() { document.getElementById('user-modal').classList.remove('open'); }
+
+// Auto-login if session exists
+window.onload = () => {
+  const t = sessionStorage.getItem('admin_token');
+  if (t) {
+    adminToken = t;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    loadDashboard();
+  }
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>קלוריפודי — מעקב תזונה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --font-display: 'Varela Round', system-ui, sans-serif;
+    --font-body: 'Rubik', system-ui, sans-serif;
+    --bg: #FBF4F1;
+    --card: #FFFFFF;
+    --ink: #43403C;
+    --ink-soft: #A39C95;
+    --line: #F0E7E2;
+    --track: #EFE7E2;
+    --green: #84A95C;
+    --green-deep: #5E7E3E;
+    --green-soft: #EAF1DF;
+    --green-shadow: rgba(94,126,62,.45);
+    --pink: #E78BA0;
+    --pink-deep: #CC647D;
+    --pink-soft: #FCE7EC;
+    --carb: #EBB266;
+    --fat:  #C4A4DB;
+    --water: #7FC1CE;
+    --water-soft: #E0F1F3;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #E9E5E0;
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(120% 80% at 50% 0%, #F3EEE9 0%, #E7E2DC 60%, #DED8D1 100%);
+  }
+  #app { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+  #deviceWrap { transform-origin: center center; }
+  button { font-family: var(--font-body); }
+  input  { font-family: var(--font-body); }
+  ::selection { background: var(--green-soft); }
+
+  input[type=range].kp-slider {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 10px; border-radius: 10px;
+    background: var(--track); outline: none; margin: 0;
+  }
+  input[type=range].kp-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 30px; height: 30px; border-radius: 50%;
+    background: #fff; border: 4px solid var(--green);
+    box-shadow: 0 3px 10px -2px rgba(94,126,62,.5); cursor: pointer;
+  }
+  input[type=range].kp-slider::-moz-range-thumb {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #fff; border: 4px solid var(--green);
+    box-shadow: 0 3px 10px -2px rgba(94,126,62,.5); cursor: pointer;
+  }
+  @keyframes kpPulse { 0%,100% { opacity:1; } 50% { opacity:.45; } }
+  .kp-pulse { animation: kpPulse 1.3s ease-in-out infinite; }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+</style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- React -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+
+  <!-- iOS device frame -->
+  <script type="text/babel" src="frames/ios-frame.jsx"></script>
+
+  <!-- Core logic + API client -->
+  <script src="js/core.js"></script>
+  <script src="js/api.js"></script>
+
+  <!-- UI components (order matters) -->
+  <script type="text/babel" src="jsx/ui.jsx"></script>
+  <script type="text/babel" src="jsx/auth.jsx"></script>
+  <script type="text/babel" src="jsx/onboarding.jsx"></script>
+  <script type="text/babel" src="jsx/home.jsx"></script>
+  <script type="text/babel" src="jsx/addfood.jsx"></script>
+  <script type="text/babel" src="jsx/camera.jsx"></script>
+  <script type="text/babel" src="jsx/history.jsx"></script>
+  <script type="text/babel" src="jsx/profile.jsx"></script>
+  <script type="text/babel" src="jsx/app.jsx"></script>
+
+  <script>
+    function fitDevice() {
+      var wrap = document.getElementById('deviceWrap');
+      if (!wrap) return;
+      var s = Math.min((window.innerWidth-24)/402, (window.innerHeight-24)/874, 1.15);
+      wrap.style.transform = 'scale(' + s + ')';
+    }
+    window.addEventListener('resize', fitDevice);
+    var _fit = setInterval(fitDevice, 250);
+    setTimeout(function(){ clearInterval(_fit); }, 4000);
+    fitDevice();
+  </script>
+</body>
+</html>
