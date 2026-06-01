@@ -1,9 +1,10 @@
-const express   = require('express');
+const express    = require('express');
 const Datastore  = require('@seald-io/nedb');
 const bcrypt     = require('bcryptjs');
 const jwt        = require('jsonwebtoken');
 const path       = require('path');
 const fs         = require('fs');
+const Anthropic  = require('@anthropic-ai/sdk');
 
 const app       = express();
 const PORT      = process.env.PORT || 3000;
@@ -126,6 +127,47 @@ app.put('/api/logs/:date', auth, async (req, res) => {
       await logs.insertAsync({ userId: req.user.id, date: req.params.date, foods, water, updatedAt: Date.now() });
     }
     res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Food analysis ─────────────────────────────────────────
+app.post('/api/analyze-food', auth, async (req, res) => {
+  try {
+    const { b64, mediaType = 'image/jpeg' } = req.body || {};
+    if (!b64) return res.status(400).json({ error: 'חסרת תמונה' });
+    if (!process.env.ANTHROPIC_API_KEY)
+      return res.status(503).json({ error: 'מפתח AI לא מוגדר בשרת' });
+
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } },
+          { type: 'text', text: `אתה דיאטן מומחה. נתח את התמונה ובדוק אם יש בה מזון.
+
+אם אין מזון בתמונה (רק אנשים, נוף, חפצים וכו'): החזר {"hasFood":false}
+
+אם יש מזון:
+1. זהה כל פריט מזון נפרד
+2. האם הכמות ניתנת לזיהוי בבירור מהתמונה? (למשל: נראה משקל, מידה, כמה יחידות ספורות ברורות)
+   - אם כן: needsQty:false ורשום את הכמות ב-serving
+   - אם לא (ערימה, קערה לא ברורה, כמות לא ניתנת להערכה): needsQty:true ורשום מנה בסיסית ב-serving
+
+החזר JSON תקני בלבד, ללא טקסט נוסף:
+{"hasFood":true,"needsQty":false,"items":[{"name":"שם בעברית","serving":"תיאור כמות","icon":"אמוג׳י אחד","kcal":מספר,"p":מספר,"c":מספר,"f":מספר}]}` }
+        ]
+      }]
+    });
+
+    let s = (msg.content[0].text || '').trim();
+    const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fence) s = fence[1].trim();
+    const start = s.indexOf('{'); const end = s.lastIndexOf('}');
+    if (start >= 0 && end > start) s = s.slice(start, end + 1);
+    res.json(JSON.parse(s));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

@@ -45,98 +45,153 @@ function parseItems(text) {
 }
 
 function CameraTab({ onPick, onAdd, defaultMeal, onClose }) {
-  const [status, setStatus] = React.useState('idle'); // idle|loading|done|error
+  const [status, setStatus]   = React.useState('idle'); // idle|loading|done|qty|error
   const [preview, setPreview] = React.useState(null);
-  const [items, setItems] = React.useState([]);
-  const [err, setErr] = React.useState('');
+  const [items, setItems]     = React.useState([]);
+  const [qtys, setQtys]       = React.useState({});   // index → qty
+  const [needsQty, setNeedsQty] = React.useState(false);
+  const [err, setErr]         = React.useState('');
   const fileRef = React.useRef(null);
-  const galRef = React.useRef(null);
+  const galRef  = React.useRef(null);
 
   async function handleFile(e) {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
-    setErr(''); setStatus('loading'); setItems([]);
+    setErr(''); setStatus('loading'); setItems([]); setQtys({});
     try {
       const { b64, preview } = await fileToScaledB64(file);
       setPreview(preview);
-      const res = await window.claude.complete({
-        messages: [{ role: 'user', content: [
-          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
-          { type: 'text', text: 'אתה דיאטן מומחה. זהה את כל פריטי המזון בתמונה והערך את הכמות. החזר JSON תקין בלבד ללא טקסט נוסף, במבנה המדויק: {"items":[{"name":"שם המאכל בעברית","serving":"תיאור הכמות בעברית","icon":"אימוג׳י מזון אחד","kcal":מספר_שלם,"p":גרם_חלבון,"c":גרם_פחמימה,"f":גרם_שומן}]}. הערך ערכים ריאליים לכל מנה שנראית בצלחת. אם אין מזון, החזר {"items":[]}.' },
-        ]}],
+
+      const resp = await fetch('/api/analyze-food', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API.token() },
+        body: JSON.stringify({ b64, mediaType: 'image/jpeg' }),
       });
-      const parsed = parseItems(res);
-      if (parsed === null) { setStatus('error'); setErr('לא הצלחנו לקרוא את התשובה. נסי שוב או הזיני ידנית.'); return; }
-      if (parsed.length === 0) { setStatus('error'); setErr('לא זוהה מזון בתמונה. נסי תמונה ברורה יותר או הזיני ידנית.'); return; }
-      setItems(parsed); setStatus('done');
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'שגיאת שרת');
+
+      if (!data.hasFood) {
+        setStatus('error');
+        setErr('🙅 לא זוהה מזון בתמונה. נסי לצלם צלחת או מאכל ספציפי.');
+        return;
+      }
+
+      const parsed = (data.items || []).filter(it => it.kcal > 0);
+      if (parsed.length === 0) {
+        setStatus('error');
+        setErr('לא הצלחנו לזהות פריטים. נסי תמונה ברורה יותר.');
+        return;
+      }
+
+      const initQtys = {};
+      parsed.forEach((_, i) => { initQtys[i] = 1; });
+      setItems(parsed);
+      setQtys(initQtys);
+      setNeedsQty(!!data.needsQty);
+      setStatus('done');
     } catch (e) {
-      setStatus('error'); setErr('הזיהוי נכשל. בדקי חיבור ונסי שוב, או הזיני ידנית.');
+      setStatus('error'); setErr('הניתוח נכשל: ' + e.message);
     }
     e.target.value = '';
   }
 
-  const addAll = () => { items.forEach(it => onAdd({ ...it, qty: 1, meal: defaultMeal })); onClose(); };
-  const total = items.reduce((s, it) => s + it.kcal, 0);
+  const changeQty = (i, d) => setQtys(q => ({ ...q, [i]: Math.max(0.5, Math.round(((q[i] || 1) + d) * 2) / 2) }));
 
-  if (status === 'loading') {
-    return (
-      <div style={{ textAlign: 'center', padding: '20px 0' }}>
-        {preview && <img src={preview} alt="" style={{ width: '100%', maxHeight: 230, objectFit: 'cover', borderRadius: 20, marginBottom: 22 }} />}
-        <div className="kp-pulse" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, color: 'var(--green-deep)', fontSize: 16, fontWeight: 600 }}>
-          <Icon.spark s={22} c="var(--green)" /> מנתחים את הצלחת…
-        </div>
-        <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', marginTop: 8 }}>הבינה המלאכותית מזהה את המאכלים ומעריכה ערכים תזונתיים</p>
+  const addAll = () => {
+    items.forEach((it, i) => onAdd({ ...it, qty: qtys[i] || 1, meal: defaultMeal }));
+    onClose();
+  };
+
+  const total = items.reduce((s, it, i) => s + it.kcal * (qtys[i] || 1), 0);
+
+  const reset = () => { setStatus('idle'); setPreview(null); setErr(''); };
+
+  // ── loading ──
+  if (status === 'loading') return (
+    <div style={{ textAlign: 'center', padding: '20px 0' }}>
+      {preview && <img src={preview} alt="" style={{ width: '100%', maxHeight: 230, objectFit: 'cover', borderRadius: 20, marginBottom: 22 }} />}
+      <div className="kp-pulse" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, color: 'var(--green-deep)', fontSize: 16, fontWeight: 600 }}>
+        <Icon.spark s={22} c="var(--green)" /> מנתחים את הצלחת…
       </div>
-    );
-  }
+      <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', marginTop: 8 }}>AI מזהה מאכלים ומחשב ערכים תזונתיים</p>
+    </div>
+  );
 
-  if (status === 'done') {
-    return (
-      <div>
-        {preview && <img src={preview} alt="" style={{ width: '100%', maxHeight: 190, objectFit: 'cover', borderRadius: 20, marginBottom: 8 }} />}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, margin: '12px 2px 12px', color: 'var(--green-deep)', fontSize: 14.5, fontWeight: 600 }}>
-          <Icon.spark s={18} c="var(--green)" /> זוהו {items.length} פריטים · {total} קק״ל
+  // ── done (with optional qty review) ──
+  if (status === 'done') return (
+    <div>
+      {preview && <img src={preview} alt="" style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 20, marginBottom: 10 }} />}
+
+      {needsQty && (
+        <div style={{ background: 'var(--carb)', borderRadius: 14, padding: '10px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 18 }}>🔢</span>
+          <span style={{ fontSize: 13.5, color: '#fff', fontWeight: 600 }}>הכמות לא נראתה בתמונה — אנא אשרי</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {items.map((it, i) => (
-            <button key={i} onClick={() => onPick(it)} style={searchRow}>
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 21 }}>{it.icon}</div>
-              <div style={{ flex: 1, textAlign: 'start' }}>
-                <div style={{ fontSize: 15.5, fontWeight: 500, color: 'var(--ink)' }}>{it.name}</div>
-                <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{it.serving} · {it.kcal} קק״ל · ח{it.p} פ{it.c} ש{it.f}</div>
+      )}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, margin: '6px 2px 12px', color: 'var(--green-deep)', fontSize: 14, fontWeight: 600 }}>
+        <Icon.spark s={17} c="var(--green)" /> זוהו {items.length} פריטים · סה״כ {Math.round(total)} קק״ל
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {items.map((it, i) => (
+          <div key={i} style={{ background: 'var(--card)', borderRadius: 18, padding: '12px 14px', boxShadow: 'inset 0 0 0 1.5px var(--line)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: needsQty ? 12 : 0 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>{it.icon}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)' }}>{it.name}</div>
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{it.serving} · {Math.round(it.kcal * (qtys[i] || 1))} קק״ל</div>
               </div>
-              <div style={{ width: 30, height: 30, borderRadius: 10, background: 'var(--green-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon.edit s={16} c="var(--green-deep)" /></div>
-            </button>
-          ))}
-        </div>
-        <div style={{ marginTop: 16 }}>
-          <Btn onClick={addAll}>הוספת הכול ({items.length})</Btn>
-          <button onClick={() => { setStatus('idle'); setPreview(null); }} style={{ width: '100%', border: 'none', background: 'transparent', color: 'var(--ink-soft)', fontSize: 14.5, padding: '14px 0 0', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>צילום חדש</button>
-        </div>
-        <p style={{ fontSize: 12, color: 'var(--ink-soft)', textAlign: 'center', marginTop: 6, lineHeight: 1.5 }}>הערכים הם הערכה אוטומטית — אפשר לערוך בלחיצה על פריט</p>
+              {!needsQty && (
+                <button onClick={() => onPick(it)} style={{ border: 'none', background: 'var(--green-soft)', borderRadius: 10, padding: '6px 10px', cursor: 'pointer', fontSize: 12, color: 'var(--green-deep)', fontWeight: 600, fontFamily: 'var(--font-body)' }}>ערוך</button>
+              )}
+            </div>
+            {needsQty && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 13.5, color: 'var(--ink-soft)' }}>כמות מנות:</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <button onClick={() => changeQty(i, -0.5)} style={qtyBtn}>−</button>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, minWidth: 30, textAlign: 'center' }}>{qtys[i] || 1}</span>
+                  <button onClick={() => changeQty(i, 0.5)} style={qtyBtn}>+</button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
-    );
-  }
 
-  // idle / error
+      <div style={{ marginTop: 16 }}>
+        <Btn onClick={addAll}>הוספת הכול ({items.length})</Btn>
+        <button onClick={reset} style={{ width: '100%', border: 'none', background: 'transparent', color: 'var(--ink-soft)', fontSize: 14, padding: '14px 0 0', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>צילום חדש</button>
+      </div>
+    </div>
+  );
+
+  // ── idle / error ──
   return (
     <div style={{ textAlign: 'center', padding: '6px 0' }}>
       <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handleFile} style={{ display: 'none' }} />
-      <input ref={galRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
+      <input ref={galRef}  type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
       <div style={{ background: 'var(--green-soft)', borderRadius: 24, padding: '34px 20px', marginBottom: 16 }}>
         <div style={{ width: 72, height: 72, borderRadius: 24, background: 'var(--card)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', boxShadow: '0 6px 18px -10px rgba(0,0,0,.3)' }}>
           <Icon.camera s={34} c="var(--green)" />
         </div>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 19, color: 'var(--green-deep)' }}>צלמי את הצלחת</div>
-        <p style={{ fontSize: 14, color: 'var(--ink-soft)', margin: '6px auto 0', maxWidth: 250, lineHeight: 1.5 }}>הבינה המלאכותית תזהה את המאכלים ותחשב קלוריות ומאקרו אוטומטית</p>
+        <p style={{ fontSize: 14, color: 'var(--ink-soft)', margin: '6px auto 0', maxWidth: 250, lineHeight: 1.5 }}>AI יזהה את המאכלים ויחשב קלוריות ומאקרו אוטומטית — ויבדוק שיש אוכל בתמונה</p>
       </div>
-      {err && <div style={{ background: 'var(--pink-soft)', color: 'var(--pink-deep)', borderRadius: 14, padding: '12px 14px', fontSize: 13.5, marginBottom: 14, lineHeight: 1.5 }}>{err}</div>}
-      <Btn onClick={() => fileRef.current.click()}>פתיחת מצלמה</Btn>
+      {err && (
+        <div style={{ background: 'var(--pink-soft)', color: 'var(--pink-deep)', borderRadius: 14, padding: '12px 14px', fontSize: 13.5, marginBottom: 14, lineHeight: 1.5, textAlign: 'start' }}>
+          {err}
+        </div>
+      )}
+      <Btn onClick={() => fileRef.current.click()}>📷 צילום עם המצלמה</Btn>
       <div style={{ height: 10 }} />
-      <Btn variant="ghost" onClick={() => galRef.current.click()}>בחירה מהגלריה</Btn>
+      <Btn variant="ghost" onClick={() => galRef.current.click()}>🖼️ בחירה מהגלריה</Btn>
     </div>
   );
 }
+
+const qtyBtn = { border: 'none', cursor: 'pointer', width: 34, height: 34, borderRadius: 10, background: 'var(--green-soft)', fontSize: 20, color: 'var(--green-deep)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-body)' };
 
 // ---------- confirm qty + meal ----------
 function FoodConfirm({ base, defaultMeal, onCancel, onConfirm }) {

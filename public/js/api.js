@@ -26,6 +26,7 @@ const API = (() => {
 
   return {
     isLoggedIn: () => !!getToken(),
+    token: getToken,
     logout: clearToken,
 
     async register(username, password, name) {
