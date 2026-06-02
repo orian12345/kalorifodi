@@ -4,6 +4,7 @@ const bcrypt     = require('bcryptjs');
 const jwt        = require('jsonwebtoken');
 const path       = require('path');
 const fs         = require('fs');
+const https      = require('https');
 const Anthropic  = require('@anthropic-ai/sdk');
 
 const app       = express();
@@ -128,6 +129,21 @@ app.put('/api/logs/:date', auth, async (req, res) => {
     }
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Food search (Open Food Facts proxy) ───────────────────
+app.get('/api/food-search', auth, (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (q.length < 2) return res.json({ products: [] });
+  const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=12&cc=il&fields=product_name,product_name_he,brands,serving_size,nutriments,code`;
+  https.get(url, { headers: { 'User-Agent': 'KaloriFodi/1.0 (educational)' } }, apiRes => {
+    let raw = '';
+    apiRes.on('data', d => raw += d);
+    apiRes.on('end', () => {
+      try { res.json(JSON.parse(raw)); }
+      catch { res.json({ products: [] }); }
+    });
+  }).on('error', () => res.json({ products: [] }));
 });
 
 // ── Food analysis ─────────────────────────────────────────

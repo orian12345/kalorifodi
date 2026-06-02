@@ -59,15 +59,85 @@ function AddFood({ defaultMeal, onClose, onAdd }) {
 // ---------- SEARCH ----------
 function SearchTab({ onPick }) {
   const [q, setQ] = React.useState('');
-  const list = KP.FOODS.filter(f => f.name.includes(q.trim()));
+  const [online, setOnline]   = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+
+  const localList = q.trim() ? KP.FOODS.filter(f => f.name.includes(q.trim())) : [];
+
+  React.useEffect(() => {
+    const query = q.trim();
+    if (query.length < 2) { setOnline([]); setLoading(false); return; }
+    setLoading(true);
+    const t = setTimeout(async () => {
+      try {
+        const resp = await fetch(`/api/food-search?q=${encodeURIComponent(query)}`, {
+          headers: { 'Authorization': 'Bearer ' + API.token() }
+        });
+        const data = await resp.json();
+        const localNames = new Set(KP.FOODS.filter(f => f.name.includes(query)).map(f => f.name));
+        const parsed = (data.products || [])
+          .filter(p => {
+            const n = p.nutriments || {};
+            return (n['energy-kcal_100g'] || n['energy-kcal']) && (p.product_name_he || p.product_name);
+          })
+          .map(p => {
+            const name  = (p.product_name_he || p.product_name || '').trim();
+            const n     = p.nutriments || {};
+            const k100  = Math.round(+(n['energy-kcal_100g'] || n['energy-kcal'] || 0));
+            const p100  = Math.round(+(n['proteins_100g'] || 0));
+            const c100  = Math.round(+(n['carbohydrates_100g'] || 0));
+            const f100  = Math.round(+(n['fat_100g'] || 0));
+            const sStr  = (p.serving_size || '100g');
+            const gm    = sStr.match(/(\d+(?:\.\d+)?)\s*g/i);
+            const grams = gm ? Math.round(+gm[1]) : 100;
+            const ratio = grams / 100;
+            return {
+              id: 'off_' + (p.code || Math.random()),
+              name,
+              icon: '🌐',
+              serving: `${grams}ג׳`,
+              kcal: Math.round(k100 * ratio),
+              p: Math.round(p100 * ratio),
+              c: Math.round(c100 * ratio),
+              f: Math.round(f100 * ratio),
+              grams,
+              brand: (p.brands || '').split(',')[0].trim(),
+            };
+          })
+          .filter(p => p.kcal > 0 && p.name.length > 1 && !localNames.has(p.name));
+        setOnline(parsed);
+      } catch { setOnline([]); }
+      setLoading(false);
+    }, 650);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  const hasQuery = q.trim().length > 0;
+
   return (
     <div>
       <div style={{ position: 'relative', marginBottom: 14 }}>
-        <span style={{ position: 'absolute', insetInlineStart: 16, top: '50%', transform: 'translateY(-50%)' }}><Icon.search s={20} c="var(--ink-soft)" /></span>
-        <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="חיפוש מאכל…" style={{ width: '100%', boxSizing: 'border-box', border: 'none', background: 'var(--card)', borderRadius: 16, padding: '15px 48px', fontSize: 16, fontFamily: 'var(--font-body)', color: 'var(--ink)', outline: 'none' }} />
+        <span style={{ position: 'absolute', insetInlineStart: 16, top: '50%', transform: 'translateY(-50%)' }}>
+          <Icon.search s={20} c="var(--ink-soft)" />
+        </span>
+        <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="חיפוש מאכל…"
+          style={{ width: '100%', boxSizing: 'border-box', border: 'none', background: 'var(--card)', borderRadius: 16, padding: '15px 48px', fontSize: 16, fontFamily: 'var(--font-body)', color: 'var(--ink)', outline: 'none' }} />
+        {loading && (
+          <span className="kp-pulse" style={{ position: 'absolute', insetInlineEnd: 16, top: '50%', transform: 'translateY(-50%)' }}>
+            <Icon.spark s={16} c="var(--green)" />
+          </span>
+        )}
       </div>
+
+      {!hasQuery && (
+        <div style={{ textAlign: 'center', color: 'var(--ink-soft)', padding: '40px 0 20px', fontSize: 14 }}>
+          🔍 הקלידי שם מאכל לחיפוש
+        </div>
+      )}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {list.map(f => (
+        {/* ── תוצאות מקומיות ── */}
+        {localList.map(f => (
           <button key={f.id} onClick={() => onPick(f)} style={searchRow}>
             <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 21 }}>{f.icon}</div>
             <div style={{ flex: 1, textAlign: 'start' }}>
@@ -77,7 +147,36 @@ function SearchTab({ onPick }) {
             <div style={{ width: 30, height: 30, borderRadius: 10, background: 'var(--green-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon.plus s={18} c="var(--green-deep)" /></div>
           </button>
         ))}
-        {list.length === 0 && <div style={{ textAlign: 'center', color: 'var(--ink-soft)', padding: '30px 0', fontSize: 14 }}>לא נמצא מאכל — נסי להוסיף ידנית</div>}
+
+        {/* ── תוצאות מ-Open Food Facts ── */}
+        {online.length > 0 && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0' }}>
+              <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
+              <span style={{ fontSize: 11, color: 'var(--ink-soft)', fontWeight: 700, whiteSpace: 'nowrap' }}>🌐 נתונים אמיתיים · Open Food Facts</span>
+              <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
+            </div>
+            {online.map(f => (
+              <button key={f.id} onClick={() => onPick(f)} style={searchRow}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--green-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🌐</div>
+                <div style={{ flex: 1, textAlign: 'start' }}>
+                  <div style={{ fontSize: 15.5, fontWeight: 500, color: 'var(--ink)' }}>{f.name}</div>
+                  <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
+                    {f.brand ? f.brand + ' · ' : ''}{f.serving} · {f.kcal} קק״ל
+                  </div>
+                </div>
+                <div style={{ width: 30, height: 30, borderRadius: 10, background: 'var(--green-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon.plus s={18} c="var(--green-deep)" /></div>
+              </button>
+            ))}
+          </>
+        )}
+
+        {/* ── מצב ריק ── */}
+        {hasQuery && !loading && localList.length === 0 && online.length === 0 && (
+          <div style={{ textAlign: 'center', color: 'var(--ink-soft)', padding: '30px 0', fontSize: 14 }}>
+            לא נמצא מאכל — נסי להוסיף ידנית
+          </div>
+        )}
       </div>
     </div>
   );
