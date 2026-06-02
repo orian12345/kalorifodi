@@ -12,19 +12,34 @@ function App() {
 
   const today = KP.TODAY();
 
+  const PROFILE_KEY = 'kp_profile_cache_v1';
+
   // ── bootstrap ──────────────────────────────────────────
   React.useEffect(() => {
     if (!API.isLoggedIn()) { setGate('auth'); return; }
     API.getUser()
       .then(data => {
-        if (!data.profile) { setGate('onboarding'); return; }
+        if (!data.profile) { setGate('onboarding'); return null; }
         setUser(data.profile);
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(data.profile));
         return API.getWeek();
       })
       .then(week => {
         if (week) { setLogs(week); setGate('app'); }
       })
-      .catch(() => { API.logout(); setGate('auth'); });
+      .catch(e => {
+        // 401/404 = bad token or account deleted → force re-login
+        if (!e.status || e.status === 401 || e.status === 404) {
+          API.logout();
+          localStorage.removeItem(PROFILE_KEY);
+          setGate('auth');
+          return;
+        }
+        // Server temporarily unavailable → use cached profile if available
+        const cached = localStorage.getItem(PROFILE_KEY);
+        if (cached) { setUser(JSON.parse(cached)); setGate('app'); }
+        else { API.logout(); setGate('auth'); }
+      });
   }, []);
 
   // ── auth success ───────────────────────────────────────
@@ -80,6 +95,7 @@ function App() {
   const reset = () => {
     if (!window.confirm('לצאת מהחשבון ולאפס את כל הנתונים?')) return;
     API.logout();
+    localStorage.removeItem(PROFILE_KEY);
     setUser(null); setLogs({}); setTab('home'); setGate('auth');
   };
 

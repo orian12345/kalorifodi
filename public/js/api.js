@@ -20,7 +20,11 @@ const API = (() => {
     if (body !== undefined) opts.body = JSON.stringify(body);
     const r = await fetch(url, opts);
     const data = await r.json();
-    if (!r.ok) throw new Error(data.error || 'שגיאה');
+    if (!r.ok) {
+      const err = new Error(data.error || 'שגיאה');
+      err.status = r.status;
+      throw err;
+    }
     return data;
   }
 
