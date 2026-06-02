@@ -195,10 +195,19 @@ const qtyBtn = { border: 'none', cursor: 'pointer', width: 34, height: 34, borde
 
 // ---------- confirm qty + meal ----------
 function FoodConfirm({ base, defaultMeal, onCancel, onConfirm }) {
+  const servingGrams = base.grams || null;
+  const [grams, setGrams] = React.useState(servingGrams || 100);
   const [qty, setQty] = React.useState(1);
   const [meal, setMeal] = React.useState(defaultMeal || 'breakfast');
-  const k = Math.round(base.kcal * qty);
-  const step = (d) => setQty(q => Math.max(0.5, Math.round((q + d) * 2) / 2));
+
+  const ratio = servingGrams ? grams / servingGrams : qty;
+  const k  = Math.round(base.kcal * ratio);
+  const kp = Math.round(base.p * ratio);
+  const kc = Math.round(base.c * ratio);
+  const kf = Math.round(base.f * ratio);
+
+  const stepGrams = (d) => setGrams(g => Math.max(5, g + d));
+  const stepQty   = (d) => setQty(q => Math.max(0.5, Math.round((q + d) * 2) / 2));
 
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 120, display: 'flex', flexDirection: 'column' }}>
@@ -208,19 +217,30 @@ function FoodConfirm({ base, defaultMeal, onCancel, onConfirm }) {
           <div style={{ width: 52, height: 52, borderRadius: 16, background: 'var(--card)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>{base.icon || '🍽️'}</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--ink)' }}>{base.name}</div>
-            <div style={{ fontSize: 13.5, color: 'var(--ink-soft)' }}>{base.serving}</div>
+            <div style={{ fontSize: 13.5, color: 'var(--ink-soft)' }}>{base.serving}{servingGrams ? ` · מנה ${servingGrams}ג׳` : ''}</div>
           </div>
         </div>
 
-        {/* qty stepper */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--card)', borderRadius: 18, padding: '12px 16px', marginBottom: 14 }}>
-          <span style={{ fontSize: 15.5, color: 'var(--ink)', fontWeight: 500 }}>כמות מנות</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <button onClick={() => step(-0.5)} style={stepBtn}><Icon.minus s={20} c="var(--green-deep)" /></button>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--ink)', minWidth: 36, textAlign: 'center' }}>{qty}</span>
-            <button onClick={() => step(0.5)} style={stepBtn}><Icon.plus s={20} c="var(--green-deep)" /></button>
+        {/* grams stepper (when food has grams) or servings stepper (manual food) */}
+        {servingGrams ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--card)', borderRadius: 18, padding: '12px 16px', marginBottom: 14 }}>
+            <span style={{ fontSize: 15.5, color: 'var(--ink)', fontWeight: 500 }}>כמות בגרמים</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <button onClick={() => stepGrams(-10)} style={stepBtn}><Icon.minus s={20} c="var(--green-deep)" /></button>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--ink)', minWidth: 52, textAlign: 'center' }}>{grams}ג׳</span>
+              <button onClick={() => stepGrams(10)} style={stepBtn}><Icon.plus s={20} c="var(--green-deep)" /></button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--card)', borderRadius: 18, padding: '12px 16px', marginBottom: 14 }}>
+            <span style={{ fontSize: 15.5, color: 'var(--ink)', fontWeight: 500 }}>כמות מנות</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <button onClick={() => stepQty(-0.5)} style={stepBtn}><Icon.minus s={20} c="var(--green-deep)" /></button>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--ink)', minWidth: 36, textAlign: 'center' }}>{qty}</span>
+              <button onClick={() => stepQty(0.5)} style={stepBtn}><Icon.plus s={20} c="var(--green-deep)" /></button>
+            </div>
+          </div>
+        )}
 
         {/* meal select */}
         <div style={{ display: 'flex', gap: 7, marginBottom: 16 }}>
@@ -241,7 +261,7 @@ function FoodConfirm({ base, defaultMeal, onCancel, onConfirm }) {
 
         {/* nutrition summary */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
-          {[['קלוריות', k, 'var(--green)'], ['חלבון', Math.round(base.p * qty) + 'ג', 'var(--pink)'], ['פחמ׳', Math.round(base.c * qty) + 'ג', 'var(--carb)'], ['שומן', Math.round(base.f * qty) + 'ג', 'var(--fat)']].map(([l, v, c]) => (
+          {[['קלוריות', k, 'var(--green)'], ['חלבון', kp + 'ג׳', 'var(--pink)'], ['פחמ׳', kc + 'ג׳', 'var(--carb)'], ['שומן', kf + 'ג׳', 'var(--fat)']].map(([l, v, c]) => (
             <div key={l} style={{ flex: 1, background: 'var(--card)', borderRadius: 14, padding: '10px 4px', textAlign: 'center' }}>
               <div style={{ width: 8, height: 8, borderRadius: 3, background: c, margin: '0 auto 5px' }} />
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 17, color: 'var(--ink)' }}>{v}</div>
@@ -250,7 +270,7 @@ function FoodConfirm({ base, defaultMeal, onCancel, onConfirm }) {
           ))}
         </div>
 
-        <Btn onClick={() => onConfirm({ name: base.name, icon: base.icon || '🍽️', serving: base.serving, kcal: base.kcal, p: base.p, c: base.c, f: base.f, qty, meal })}>הוספה ליומן</Btn>
+        <Btn onClick={() => onConfirm({ name: base.name, icon: base.icon || '🍽️', serving: base.serving, kcal: base.kcal, p: base.p, c: base.c, f: base.f, qty: ratio, meal })}>הוספה ליומן</Btn>
       </div>
     </div>
   );

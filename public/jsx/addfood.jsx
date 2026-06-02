@@ -85,9 +85,12 @@ function SearchTab({ onPick }) {
 
 // ---------- MANUAL ----------
 function ManualTab({ onPick }) {
-  const [f, setF] = React.useState({ name: '', serving: 'מנה', kcal: '', p: '', c: '', f: '' });
+  const [f, setF] = React.useState({ name: '', grams: '100', kcal: '', p: '', c: '', f: '' });
   const set = (k, v) => setF(s => ({ ...s, [k]: v }));
   const ok = f.name.trim() && f.kcal !== '';
+  const g = +f.grams || 100;
+  const kcal100 = +f.kcal || 0;
+  const totalKcal = Math.round(kcal100 * g / 100);
   const num = (label, k, unit) => (
     <div style={{ flex: 1 }}>
       <label style={manualLbl}>{label}</label>
@@ -103,23 +106,41 @@ function ManualTab({ onPick }) {
         <label style={manualLbl}>שם המאכל</label>
         <input autoFocus value={f.name} onChange={e => set('name', e.target.value)} placeholder="למשל: סלט יווני ביתי" style={manualInput} />
       </div>
-      <div>
-        <label style={manualLbl}>גודל מנה</label>
-        <input value={f.serving} onChange={e => set('serving', e.target.value)} placeholder="מנה / 100ג / כוס" style={manualInput} />
-      </div>
-      <div>
-        <label style={manualLbl}>קלוריות</label>
-        <div style={{ position: 'relative' }}>
-          <input type="number" inputMode="numeric" value={f.kcal} onChange={e => set('kcal', e.target.value)} placeholder="0" style={manualInput} />
-          <span style={{ position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'var(--ink-soft)' }}>קק״ל</span>
+      <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ flex: 1 }}>
+          <label style={manualLbl}>קלוריות ל-100 גרם</label>
+          <div style={{ position: 'relative' }}>
+            <input type="number" inputMode="numeric" value={f.kcal} onChange={e => set('kcal', e.target.value)} placeholder="0" style={manualInput} />
+            <span style={{ position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'var(--ink-soft)' }}>קק״ל</span>
+          </div>
+        </div>
+        <div style={{ flex: 1 }}>
+          <label style={manualLbl}>גרמים שאכלת</label>
+          <div style={{ position: 'relative' }}>
+            <input type="number" inputMode="numeric" value={f.grams} onChange={e => set('grams', e.target.value)} placeholder="100" style={manualInput} />
+            <span style={{ position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'var(--ink-soft)' }}>ג׳</span>
+          </div>
         </div>
       </div>
+      {ok && (
+        <div style={{ background: 'var(--green-soft)', borderRadius: 14, padding: '10px 14px', textAlign: 'center', color: 'var(--green-deep)', fontSize: 15, fontWeight: 600 }}>
+          סה״כ: {totalKcal} קק״ל
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 10 }}>
-        {num('חלבון', 'p', 'ג׳')}
-        {num('פחמימות', 'c', 'ג׳')}
-        {num('שומן', 'f', 'ג׳')}
+        {num('חלבון ל-100ג׳', 'p', 'ג׳')}
+        {num('פחמימות ל-100ג׳', 'c', 'ג׳')}
+        {num('שומן ל-100ג׳', 'f', 'ג׳')}
       </div>
-      <Btn disabled={!ok} onClick={() => onPick({ name: f.name.trim(), icon: '🍽️', serving: f.serving || 'מנה', kcal: +f.kcal || 0, p: +f.p || 0, c: +f.c || 0, f: +f.f || 0 })}>המשך</Btn>
+      <Btn disabled={!ok} onClick={() => onPick({
+        name: f.name.trim(), icon: '🍽️',
+        serving: g + 'ג׳',
+        kcal: Math.round(kcal100 * g / 100),
+        p: Math.round((+f.p || 0) * g / 100),
+        c: Math.round((+f.c || 0) * g / 100),
+        f: Math.round((+f.f || 0) * g / 100),
+        grams: g,
+      })}>המשך</Btn>
     </div>
   );
 }
