@@ -118,7 +118,7 @@ function App() {
       {tab === 'home'    && <Home    user={user} day={day} onAddFood={m => setAddMeal(m)} onWater={changeWater} onRemoveFood={removeFood} onOpenProfile={() => setTab('profile')} />}
       {tab === 'history' && <History user={user} logs={logs} />}
       {tab === 'recipes' && <Recipes />}
-      {tab === 'profile' && <Profile user={user} onUpdate={updateUser} onReset={reset} />}
+      {tab === 'profile' && <Profile user={user} logs={logs} onUpdate={updateUser} onReset={reset} />}
 
       {/* bottom nav */}
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 40, pointerEvents: 'none' }}>
