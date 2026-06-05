@@ -3,7 +3,7 @@
    ============================================================ */
 function Profile({ user, logs, onUpdate, onReset }) {
   const [edit, setEdit] = React.useState(false);
-  const [p, setP] = React.useState(user);
+  const [p, setP]       = React.useState(user);
   React.useEffect(() => setP(user), [user]);
   const set = (k, v) => setP(s => ({ ...s, [k]: v }));
   const t = user.targets;
@@ -15,11 +15,13 @@ function Profile({ user, logs, onUpdate, onReset }) {
   };
 
   const goalLabel = (KP.GOALS.find(g => g.id === user.goal) || {}).label;
-  const actLabel = (KP.ACTIVITY.find(a => a.id === user.activity) || {}).label;
+  const actLabel  = (KP.ACTIVITY.find(a => a.id === user.activity) || {}).label;
 
   return (
     <div style={{ height: '100%', overflow: 'auto', background: 'var(--bg)', paddingBottom: 112 }}>
-      <div style={{ padding: '58px 22px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+
+      {/* ── header ── */}
+      <div style={{ padding: '52px 22px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
         <div style={{ width: 78, height: 78, borderRadius: 26, background: 'var(--green-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 34, color: 'var(--green-deep)' }}>
           {user.name.trim().charAt(0) || '🙂'}
         </div>
@@ -27,27 +29,27 @@ function Profile({ user, logs, onUpdate, onReset }) {
         <p style={{ fontSize: 14, color: 'var(--ink-soft)', margin: '3px 0 0' }}>{goalLabel} · {actLabel}</p>
       </div>
 
-      {/* plan */}
-      <div style={{ padding: '20px 18px 0' }}>
-        <PlanSection user={user} logs={logs} onUpdate={onUpdate} />
+      {/* ── weight widget (right below header) ── */}
+      <div style={{ padding: '16px 18px 0' }}>
+        <WeightWidget user={user} logs={logs} onUpdate={onUpdate} />
       </div>
 
-      {/* targets */}
+      {/* ── daily targets ── */}
       <div style={{ padding: '16px 18px 0' }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', margin: '0 4px 10px' }}>היעדים היומיים</div>
         <Card>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 12px' }}>
-            <TargetItem label="קלוריות" v={t.calories} u="קק״ל" c="var(--green)" />
-            <TargetItem label="מים" v={(t.water / 1000).toFixed(1)} u="ליטר" c="var(--water)" />
-            <TargetItem label="חלבון" v={t.protein} u="ג׳" c="var(--pink)" />
-            <TargetItem label="פחמימות" v={t.carbs} u="ג׳" c="var(--carb)" />
-            <TargetItem label="שומן" v={t.fat} u="ג׳" c="var(--fat)" />
-            <TargetItem label="קצב מטבולי" v={t.bmr} u="קק״ל" c="var(--ink-soft)" />
+            <TargetItem label="קלוריות"    v={t.calories}               u="קק״ל"  c="var(--green)" />
+            <TargetItem label="מים"         v={(t.water/1000).toFixed(1)} u="ליטר"  c="var(--water)" />
+            <TargetItem label="חלבון"       v={t.protein}                u="ג׳"    c="var(--pink)" />
+            <TargetItem label="פחמימות"     v={t.carbs}                  u="ג׳"    c="var(--carb)" />
+            <TargetItem label="שומן"        v={t.fat}                    u="ג׳"    c="var(--fat)" />
+            <TargetItem label="קצב מטבולי" v={t.bmr}                    u="קק״ל"  c="var(--ink-soft)" />
           </div>
         </Card>
       </div>
 
-      {/* details / edit */}
+      {/* ── personal data ── */}
       <div style={{ padding: '20px 18px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0 4px 10px' }}>
           <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>הנתונים שלי</span>
@@ -56,17 +58,19 @@ function Profile({ user, logs, onUpdate, onReset }) {
 
         {!edit ? (
           <Card style={{ padding: '6px 4px' }}>
-            <Row label="גיל" value={`${user.age} שנים`} />
-            <Row label="גובה" value={`${user.height} ס״מ`} />
-            <Row label="משקל" value={`${user.weight} ק״ג`} />
-            <Row label="רמת פעילות" value={actLabel} />
-            <Row label="מטרה" value={goalLabel} last />
+            <Row label="גיל"          value={`${user.age} שנים`} />
+            <Row label="גובה"         value={`${user.height} ס״מ`} />
+            <Row label="משקל נוכחי"   value={`${user.weight} ק״ג`} />
+            <Row label="משקל יעד"     value={user.targetWeight ? `${user.targetWeight} ק״ג` : '—'} />
+            <Row label="רמת פעילות"   value={actLabel} />
+            <Row label="מטרה"         value={goalLabel} last />
           </Card>
         ) : (
           <Card>
-            <EditMetric label="גיל" k="age" min={14} max={90} unit="שנים" p={p} set={set} />
-            <EditMetric label="גובה" k="height" min={130} max={210} unit="ס״מ" p={p} set={set} />
-            <EditMetric label="משקל" k="weight" min={35} max={160} unit="ק״ג" p={p} set={set} />
+            <EditMetric label="גיל"         k="age"          min={14}  max={90}  unit="שנים" p={p} set={set} />
+            <EditMetric label="גובה"        k="height"       min={130} max={210} unit='ס״מ'  p={p} set={set} />
+            <EditMetric label="משקל נוכחי" k="weight"       min={35}  max={200} unit='ק״ג'  p={p} set={set} />
+            <EditMetric label="משקל יעד"   k="targetWeight" min={30}  max={200} unit='ק״ג'  p={p} set={set} />
             <div style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 500, margin: '4px 2px 8px' }}>רמת פעילות</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 16 }}>
               {KP.ACTIVITY.map(a => <Chip key={a.id} on={p.activity === a.id} onClick={() => set('activity', a.id)}>{a.label}</Chip>)}
@@ -84,12 +88,203 @@ function Profile({ user, logs, onUpdate, onReset }) {
       </div>
 
       <div style={{ padding: '20px 18px 0' }}>
-        <button onClick={onReset} style={{ width: '100%', border: 'none', background: 'transparent', color: 'var(--pink-deep)', fontSize: 14.5, padding: '14px', cursor: 'pointer', fontFamily: 'var(--font-body)', fontWeight: 600 }}>איפוס הנתונים והתחלה מחדש</button>
+        <button onClick={onReset} style={{ width: '100%', border: 'none', background: 'transparent', color: 'var(--pink-deep)', fontSize: 14.5, padding: '14px', cursor: 'pointer', fontFamily: 'var(--font-body)', fontWeight: 600 }}>
+          איפוס הנתונים והתחלה מחדש
+        </button>
       </div>
     </div>
   );
 }
 
+// ── Weight widget ───────────────────────────────────────────
+function WeightWidget({ user, logs, onUpdate }) {
+  const [editW, setEditW]         = React.useState(false);
+  const [newWeight, setNewWeight] = React.useState(String(user.weight));
+
+  const hasTarget = !!user.targetWeight;
+  const diff      = hasTarget ? +(user.weight - user.targetWeight).toFixed(1) : 0;
+  const losing    = diff > 0.05;
+  const gaining   = diff < -0.05;
+  const reached   = hasTarget && Math.abs(diff) <= 0.05;
+
+  // forecast from actual logs
+  const activeDays  = logs ? Object.values(logs).filter(d => d?.foods?.length > 0) : [];
+  const avgKcal     = activeDays.length > 0
+    ? Math.round(activeDays.reduce((s, d) => s + KP.dayTotals(d).kcal, 0) / activeDays.length)
+    : null;
+  const TDEE        = user.goal === 'lose' ? user.targets.calories + 500
+                    : user.goal === 'gain' ? user.targets.calories - 500
+                    : user.targets.calories;
+  const dailyDef    = avgKcal !== null ? TDEE - avgKcal : null;
+  const kgPerWeek   = dailyDef !== null ? +(dailyDef * 7 / 7700).toFixed(2) : null;
+  const kgPerMonth  = kgPerWeek  !== null ? +(kgPerWeek * 4.3).toFixed(1) : null;
+  const weeksToGoal = (hasTarget && kgPerWeek && Math.abs(kgPerWeek) > 0.01 && Math.abs(diff) > 0.05)
+    ? Math.ceil(Math.abs(diff) / Math.abs(kgPerWeek))
+    : null;
+
+  const saveWeight = () => {
+    const w = parseFloat(newWeight);
+    if (!w || w < 20 || w > 300) { setEditW(false); return; }
+    onUpdate({ ...user, weight: w, targets: KP.calcTargets({ ...user, weight: w }) });
+    setEditW(false);
+  };
+
+  return (
+    <Card>
+      {/* current ↔ target */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+
+        {/* current weight */}
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 4 }}>משקל נוכחי</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 40, color: 'var(--ink)', lineHeight: 1 }}>
+            {user.weight}<span style={{ fontSize: 14, color: 'var(--ink-soft)', marginInlineStart: 2 }}>ק״ג</span>
+          </div>
+          {editW ? (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 5, marginTop: 7 }}>
+              <input type="number" inputMode="decimal" value={newWeight}
+                onChange={e => setNewWeight(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && saveWeight()}
+                autoFocus
+                style={{ width: 66, border: 'none', background: 'var(--bg)', borderRadius: 9, padding: '6px 8px', fontSize: 17, fontFamily: 'var(--font-display)', color: 'var(--green-deep)', outline: 'none', textAlign: 'center' }} />
+              <button onClick={saveWeight} style={{ border: 'none', background: 'var(--green)', borderRadius: 9, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon.check s={15} c="#fff" />
+              </button>
+              <button onClick={() => setEditW(false)} style={{ border: 'none', background: 'var(--track)', borderRadius: 9, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon.close s={15} c="var(--ink-soft)" />
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => { setNewWeight(String(user.weight)); setEditW(true); }}
+              style={{ border: 'none', background: 'var(--green-soft)', borderRadius: 9, padding: '4px 14px', fontSize: 12, color: 'var(--green-deep)', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)', marginTop: 7 }}>
+              עדכני
+            </button>
+          )}
+        </div>
+
+        {/* arrow + diff badge */}
+        {hasTarget && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            <div style={{ fontSize: 20, color: 'var(--ink-soft)' }}>→</div>
+            {reached ? (
+              <div style={{ fontSize: 13 }}>🎉</div>
+            ) : (
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: losing ? 'var(--green-deep)' : 'var(--pink-deep)', background: losing ? 'var(--green-soft)' : 'var(--pink-soft)', borderRadius: 7, padding: '3px 8px' }}>
+                {losing ? '−' : '+'}{Math.abs(diff)} ק״ג
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* target weight */}
+        {hasTarget && (
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 4 }}>יעד</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 40, color: 'var(--green-deep)', lineHeight: 1 }}>
+              {user.targetWeight}<span style={{ fontSize: 14, color: 'var(--ink-soft)', marginInlineStart: 2 }}>ק״ג</span>
+            </div>
+            {weeksToGoal ? (
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 7 }}>~{weeksToGoal} שבועות</div>
+            ) : (
+              <div style={{ height: 26 }} />
+            )}
+          </div>
+        )}
+
+        {/* no target yet */}
+        {!hasTarget && (
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 6 }}>משקל יעד</div>
+            <div style={{ fontSize: 13, color: 'var(--ink-soft)', background: 'var(--bg)', borderRadius: 12, padding: '10px', lineHeight: 1.4 }}>
+              הגדרי ב"הנתונים שלי" → עריכה
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* projection line chart */}
+      {hasTarget && !reached && (
+        <div style={{ marginTop: 16 }}>
+          <WeightChart currentWeight={user.weight} targetWeight={user.targetWeight} />
+        </div>
+      )}
+
+      {/* forecast */}
+      {avgKcal !== null ? (
+        <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--line)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>📊 תחזית לפי התפריט</span>
+            <span style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>ממוצע {avgKcal} קק״ל · {activeDays.length} ימים</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: weeksToGoal ? '1fr 1fr 1fr' : '1fr 1fr', gap: 8 }}>
+            <ForecastCell label="שבוע"  kg={kgPerWeek} />
+            <ForecastCell label="חודש"  kg={kgPerMonth} />
+            {weeksToGoal && (
+              <div style={{ background: 'var(--green-soft)', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--green-deep)' }}>{weeksToGoal}</div>
+                <div style={{ fontSize: 10.5, color: 'var(--ink-soft)', marginTop: 2 }}>שבועות ליעד</div>
+              </div>
+            )}
+          </div>
+          {dailyDef !== null && (
+            <div style={{ marginTop: 8, fontSize: 12, color: 'var(--ink-soft)', textAlign: 'center' }}>
+              {dailyDef > 0 ? `גירעון של ${dailyDef} קק״ל/יום` : dailyDef < 0 ? `עודף של ${Math.abs(dailyDef)} קק״ל/יום` : 'מאוזן — ללא שינוי משקל'}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--line)', fontSize: 12.5, color: 'var(--ink-soft)', textAlign: 'center' }}>
+          הוסיפי מזון לפחות יום אחד כדי לראות תחזית
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function ForecastCell({ label, kg }) {
+  const losing  = kg  >  0.01;
+  const gaining = kg  < -0.01;
+  return (
+    <div style={{ background: losing ? 'var(--green-soft)' : gaining ? 'var(--pink-soft)' : 'var(--bg)', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: losing ? 'var(--green-deep)' : gaining ? 'var(--pink-deep)' : 'var(--ink)' }}>
+        {losing ? '−' : gaining ? '+' : ''}{Math.abs(kg)}<span style={{ fontSize: 11 }}>ק״ג</span>
+      </div>
+      <div style={{ fontSize: 10.5, color: 'var(--ink-soft)', marginTop: 2 }}>{label}</div>
+    </div>
+  );
+}
+
+function WeightChart({ currentWeight, targetWeight }) {
+  const W = 280, H = 76;
+  const minW = Math.min(targetWeight, currentWeight) - 0.5;
+  const maxW = Math.max(targetWeight, currentWeight) + 0.5;
+  const toY  = w => H - 14 - ((w - minW) / Math.max(maxW - minW, 0.1)) * (H - 26);
+  const toX  = t => 18 + t * (W - 36);
+
+  const pts   = [0, 0.25, 0.5, 0.75, 1].map(t => ({ x: toX(t), y: toY(currentWeight - (currentWeight - targetWeight) * t) }));
+  const pathD = pts.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`).join(' ');
+  const areaD = `${pathD} L ${toX(1)} ${H} L ${toX(0)} ${H} Z`;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
+      <defs>
+        <linearGradient id="wGrad2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--green)" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="var(--green)" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={areaD} fill="url(#wGrad2)" />
+      <path d={pathD} stroke="var(--green)" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={toX(0)} cy={toY(currentWeight)}  r="4.5" fill="var(--ink-soft)" />
+      <circle cx={toX(1)} cy={toY(targetWeight)}    r="5.5" fill="var(--green)" />
+      <circle cx={toX(1)} cy={toY(targetWeight)}    r="10"  fill="none" stroke="var(--green)" strokeWidth="1.5" opacity="0.3" />
+      <text x={toX(0) + 3}  y={toY(currentWeight)  - 8} fontSize="10" fill="var(--ink-soft)"  fontFamily="Rubik">{currentWeight}</text>
+      <text x={toX(1) - 3}  y={toY(targetWeight)   - 8} textAnchor="end" fontSize="10" fill="var(--green-deep)" fontFamily="Rubik" fontWeight="700">{targetWeight}</text>
+    </svg>
+  );
+}
+
+// ── small helpers ───────────────────────────────────────────
 function TargetItem({ label, v, u, c }) {
   return (
     <div>
@@ -97,7 +292,9 @@ function TargetItem({ label, v, u, c }) {
         <div style={{ width: 8, height: 8, borderRadius: 3, background: c }} />
         <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{label}</span>
       </div>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--ink)' }}>{v}<span style={{ fontSize: 12, color: 'var(--ink-soft)', marginInlineStart: 3 }}>{u}</span></div>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--ink)' }}>
+        {v}<span style={{ fontSize: 12, color: 'var(--ink-soft)', marginInlineStart: 3 }}>{u}</span>
+      </div>
     </div>
   );
 }
@@ -112,8 +309,9 @@ function Row({ label, value, last }) {
 }
 
 function EditMetric({ label, k, min, max, unit, p, set }) {
-  const [val, setVal] = React.useState(String(p[k]));
+  const [val, setVal] = React.useState(p[k] != null ? String(p[k]) : '');
   const commit = (str) => {
+    if (!str.trim()) return;
     const n = Math.min(max, Math.max(min, parseInt(str, 10) || min));
     set(k, n);
     setVal(String(n));
@@ -127,13 +325,8 @@ function EditMetric({ label, k, min, max, unit, p, set }) {
           value={val}
           onChange={e => setVal(e.target.value)}
           onBlur={e => commit(e.target.value)}
-          style={{
-            width: '100%', boxSizing: 'border-box', border: 'none',
-            background: 'var(--card)', borderRadius: 14,
-            padding: '16px 60px 16px 20px',
-            fontSize: 38, fontFamily: 'var(--font-display)',
-            color: 'var(--green-deep)', outline: 'none',
-          }}
+          placeholder={String(min)}
+          style={{ width: '100%', boxSizing: 'border-box', border: 'none', background: 'var(--card)', borderRadius: 14, padding: '16px 60px 16px 20px', fontSize: 38, fontFamily: 'var(--font-display)', color: 'var(--green-deep)', outline: 'none' }}
         />
         <span style={{ position: 'absolute', insetInlineEnd: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 15, color: 'var(--ink-soft)', fontWeight: 500 }}>{unit}</span>
       </div>
@@ -148,244 +341,6 @@ function Chip({ children, on, onClick }) {
       background: on ? 'var(--green)' : 'var(--bg)', color: on ? '#fff' : 'var(--ink)',
       fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-body)', transition: 'all .2s',
     }}>{children}</button>
-  );
-}
-
-function PlanSection({ user, logs, onUpdate }) {
-  const plan = user.plan || {};
-  const hasPlan = !!plan.targetWeight && !!plan.targetDate;
-  const [editing, setEditing]       = React.useState(!hasPlan);
-  const [tw, setTw]                 = React.useState(String(plan.targetWeight || Math.round(user.weight * 0.95)));
-  const [td, setTd]                 = React.useState(plan.targetDate || '');
-  const [editW, setEditW]           = React.useState(false);
-  const [newWeight, setNewWeight]   = React.useState(String(user.weight));
-
-  const savePlan = () => {
-    const targetWeight = parseFloat(tw) || user.weight;
-    const todayStr = new Date().toISOString().slice(0, 10);
-    onUpdate({ ...user, plan: { targetWeight, targetDate: td, startWeight: plan.startWeight || user.weight, startDate: plan.startDate || todayStr } });
-    setEditing(false);
-  };
-
-  const saveWeight = () => {
-    const w = parseFloat(newWeight);
-    if (!w || w < 20 || w > 300) return;
-    const newTargets = KP.calcTargets({ ...user, weight: w });
-    onUpdate({ ...user, weight: w, targets: newTargets });
-    setEditW(false);
-  };
-
-  const startWeight = plan.startWeight || user.weight;
-  const targetWeight = plan.targetWeight || user.weight;
-  const targetDate = plan.targetDate ? new Date(plan.targetDate) : null;
-  const today = new Date();
-  const daysLeft = targetDate ? Math.max(0, Math.ceil((targetDate - today) / 86400000)) : 0;
-  const weeksLeft = Math.ceil(daysLeft / 7);
-  const startDate = plan.startDate ? new Date(plan.startDate) : today;
-  const totalDays = targetDate ? Math.max(1, Math.ceil((targetDate - startDate) / 86400000)) : 1;
-  const elapsed = Math.min(1, Math.max(0, (today - startDate) / (totalDays * 86400000)));
-  const totalChange = startWeight - targetWeight;
-  const weeklyChange = weeksLeft > 0 ? Math.abs(totalChange / weeksLeft).toFixed(1) : '0';
-  const direction = totalChange > 0.1 ? 'ירידה' : totalChange < -0.1 ? 'עלייה' : 'שמירה';
-
-  // projection based on actual logged calories
-  const activeDays = logs ? Object.values(logs).filter(d => d && d.foods && d.foods.length > 0) : [];
-  const avgKcal = activeDays.length > 0
-    ? Math.round(activeDays.reduce((s, d) => s + KP.dayTotals(d).kcal, 0) / activeDays.length)
-    : null;
-  const TDEE = user.goal === 'lose' ? user.targets.calories + 500
-             : user.goal === 'gain' ? user.targets.calories - 500
-             : user.targets.calories;
-  const dailyDeficit = avgKcal !== null ? TDEE - avgKcal : null;
-  const kgPerWeek   = dailyDeficit !== null ? +(dailyDeficit * 7 / 7700).toFixed(2) : null;
-  const kgPerMonth  = kgPerWeek !== null ? +(kgPerWeek * 4.3).toFixed(1) : null;
-  const kgByTarget  = kgPerWeek !== null && daysLeft > 0 ? +(kgPerWeek * daysLeft / 7).toFixed(1) : null;
-
-  const minDate = new Date(); minDate.setDate(minDate.getDate() + 7);
-  const minDateStr = minDate.toISOString().slice(0, 10);
-
-  if (editing || !hasPlan) return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0 4px 10px' }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>התוכנית שלי</span>
-        {hasPlan && <button onClick={() => setEditing(false)} style={{ border: 'none', background: 'transparent', color: 'var(--ink-soft)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>ביטול</button>}
-      </div>
-      <Card>
-        <p style={{ fontSize: 13.5, color: 'var(--ink-soft)', margin: '0 0 16px', lineHeight: 1.5 }}>
-          הגדרי יעד משקל ותאריך — ואנחנו נחשב את הצעדים הנחוצים להגיע לשם.
-        </p>
-        <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-          <div style={{ flex: 1 }}>
-            <label style={{ display: 'block', fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 6, marginInlineStart: 2 }}>משקל יעד (ק״ג)</label>
-            <div style={{ position: 'relative' }}>
-              <input type="number" inputMode="decimal" value={tw} onChange={e => setTw(e.target.value)}
-                style={{ width: '100%', boxSizing: 'border-box', border: 'none', background: 'var(--bg)', borderRadius: 14, padding: '14px 40px 14px 16px', fontSize: 28, fontFamily: 'var(--font-display)', color: 'var(--green-deep)', outline: 'none' }} />
-              <span style={{ position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--ink-soft)', fontWeight: 500 }}>ק״ג</span>
-            </div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ display: 'block', fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 6, marginInlineStart: 2 }}>תאריך יעד</label>
-            <input type="date" value={td} onChange={e => setTd(e.target.value)} min={minDateStr}
-              style={{ width: '100%', boxSizing: 'border-box', border: 'none', background: 'var(--bg)', borderRadius: 14, padding: '14px', fontSize: 14, fontFamily: 'var(--font-body)', color: 'var(--ink)', outline: 'none' }} />
-          </div>
-        </div>
-        <Btn onClick={savePlan} disabled={!tw || !td}>שמרי תוכנית</Btn>
-      </Card>
-    </div>
-  );
-
-  return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0 4px 10px' }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>התוכנית שלי</span>
-        <button onClick={() => setEditing(true)} style={{ border: 'none', background: 'transparent', color: 'var(--green-deep)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>שנה</button>
-      </div>
-      <Card style={{ marginBottom: 0 }}>
-        {/* weights */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', textAlign: 'center', marginBottom: 16 }}>
-          <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, color: 'var(--ink)' }}>{startWeight}<span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>ק״ג</span></div>
-            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>התחלה</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 18, color: 'var(--ink-soft)' }}>→</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--ink)', marginTop: 2 }}>{user.weight}<span style={{ fontSize: 11, color: 'var(--ink-soft)' }}>ק״ג</span></div>
-            {editW ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                <input type="number" inputMode="decimal" value={newWeight} onChange={e => setNewWeight(e.target.value)}
-                  style={{ width: 60, border: 'none', background: 'var(--bg)', borderRadius: 8, padding: '5px 8px', fontSize: 14, fontFamily: 'var(--font-display)', color: 'var(--green-deep)', outline: 'none', textAlign: 'center' }} />
-                <button onClick={saveWeight} style={{ border: 'none', background: 'var(--green)', borderRadius: 7, width: 26, height: 26, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Icon.check s={14} c="#fff" />
-                </button>
-                <button onClick={() => setEditW(false)} style={{ border: 'none', background: 'var(--track)', borderRadius: 7, width: 26, height: 26, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Icon.close s={14} c="var(--ink-soft)" />
-                </button>
-              </div>
-            ) : (
-              <button onClick={() => { setNewWeight(String(user.weight)); setEditW(true); }}
-                style={{ border: 'none', background: 'var(--green-soft)', borderRadius: 8, padding: '3px 9px', fontSize: 11, color: 'var(--green-deep)', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)', marginTop: 4 }}>
-                עדכני
-              </button>
-            )}
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2 }}>כרגע</div>
-          </div>
-          <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, color: 'var(--green-deep)' }}>{targetWeight}<span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>ק״ג</span></div>
-            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>יעד</div>
-          </div>
-        </div>
-
-        {/* weight projection SVG */}
-        <WeightChart startWeight={startWeight} targetWeight={targetWeight} elapsed={elapsed} daysLeft={daysLeft} />
-
-        {/* progress bar */}
-        <div style={{ marginTop: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 5 }}>
-            <span>0%</span>
-            <span>עברו {Math.round(elapsed * 100)}% מהתקופה</span>
-            <span>100%</span>
-          </div>
-          <div style={{ background: 'var(--track)', borderRadius: 8, height: 8 }}>
-            <div style={{ background: 'var(--green)', height: '100%', borderRadius: 8, width: Math.round(elapsed * 100) + '%', transition: 'width .5s' }} />
-          </div>
-        </div>
-
-        {/* stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginTop: 16 }}>
-          {[
-            { v: weeksLeft, label: 'שבועות נותרו' },
-            { v: weeklyChange + 'ק״ג', label: 'שינוי/שבוע' },
-            { v: direction, label: 'כיוון' },
-          ].map(({ v, label }) => (
-            <div key={label} style={{ background: 'var(--bg)', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, color: 'var(--ink)' }}>{v}</div>
-              <div style={{ fontSize: 10.5, color: 'var(--ink-soft)', marginTop: 2 }}>{label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* projection based on actual diet */}
-        {avgKcal !== null && (
-          <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 6 }}>📊 תחזית לפי התפריט שלך</div>
-            <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 12 }}>
-              ממוצע {avgKcal} קק״ל/יום · {activeDays.length} ימים עם נתונים
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
-              <div style={{ background: dailyDeficit > 0 ? 'var(--green-soft)' : 'var(--pink-soft)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: dailyDeficit > 0 ? 'var(--green-deep)' : 'var(--pink-deep)' }}>
-                  {kgPerWeek > 0 ? '-' : kgPerWeek < 0 ? '+' : ''}{Math.abs(kgPerWeek)}
-                  <span style={{ fontSize: 11 }}>ק״ג</span>
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2 }}>שבוע</div>
-              </div>
-              <div style={{ background: dailyDeficit > 0 ? 'var(--green-soft)' : 'var(--pink-soft)', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: dailyDeficit > 0 ? 'var(--green-deep)' : 'var(--pink-deep)' }}>
-                  {kgPerMonth > 0 ? '-' : kgPerMonth < 0 ? '+' : ''}{Math.abs(kgPerMonth)}
-                  <span style={{ fontSize: 11 }}>ק״ג</span>
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2 }}>חודש</div>
-              </div>
-            </div>
-            {kgByTarget !== null && targetDate && (
-              <div style={{ background: Math.abs(kgByTarget) > 0 ? (dailyDeficit > 0 ? 'var(--green-soft)' : 'var(--pink-soft)') : 'var(--bg)', borderRadius: 12, padding: '12px 14px', textAlign: 'center' }}>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: dailyDeficit > 0 ? 'var(--green-deep)' : 'var(--pink-deep)' }}>
-                  עד {targetDate.toLocaleDateString('he-IL', { day: 'numeric', month: 'long' })}:
-                  {' '}{kgByTarget > 0 ? 'ירידה' : kgByTarget < 0 ? 'עלייה' : 'שמירה'} של {Math.abs(kgByTarget)} ק״ג
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 3 }}>
-                  {Math.abs(kgByTarget) > 0 ? `מ-${user.weight} ל-${+(user.weight - kgByTarget).toFixed(1)} ק״ג` : 'ללא שינוי'}
-                </div>
-              </div>
-            )}
-            {dailyDeficit === 0 && (
-              <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', textAlign: 'center' }}>
-                אוכלים בדיוק לפי ה-TDEE — משקל יציב
-              </div>
-            )}
-          </div>
-        )}
-        {avgKcal === null && (
-          <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--line)', fontSize: 12.5, color: 'var(--ink-soft)', textAlign: 'center' }}>
-            הוסיפי מזון לפחות יום אחד כדי לראות תחזית
-          </div>
-        )}
-      </Card>
-    </div>
-  );
-}
-
-function WeightChart({ startWeight, targetWeight, elapsed, daysLeft }) {
-  const W = 280, H = 90;
-  const minW = Math.min(targetWeight, startWeight) - 1;
-  const maxW = Math.max(targetWeight, startWeight) + 1;
-  const toY = w => H - 20 - ((w - minW) / Math.max(maxW - minW, 0.1)) * (H - 32);
-  const toX = t => 14 + t * (W - 28);
-
-  const pts = [0, 0.25, 0.5, 0.75, 1].map(t => ({ x: toX(t), y: toY(startWeight - (startWeight - targetWeight) * t) }));
-  const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
-  const areaD = `${pathD} L ${toX(1)} ${H} L ${toX(0)} ${H} Z`;
-
-  const nowX = toX(Math.min(1, elapsed));
-  const nowY = toY(startWeight - (startWeight - targetWeight) * Math.min(1, elapsed));
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
-      <defs>
-        <linearGradient id="planGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--green)" stopOpacity="0.25" />
-          <stop offset="100%" stopColor="var(--green)" stopOpacity="0.0" />
-        </linearGradient>
-      </defs>
-      <path d={areaD} fill="url(#planGrad)" />
-      <path d={pathD} stroke="var(--green)" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
-      {/* "you are here" dot */}
-      <circle cx={nowX} cy={nowY} r="5" fill="var(--green)" />
-      <circle cx={nowX} cy={nowY} r="9" fill="none" stroke="var(--green)" strokeWidth="1.5" opacity="0.35" />
-      {/* labels */}
-      <text x={toX(0)} y={toY(startWeight) - 8} textAnchor="middle" fontSize="10" fill="var(--ink-soft)" fontFamily="Rubik">{startWeight}</text>
-      <text x={toX(1)} y={toY(targetWeight) - 8} textAnchor="middle" fontSize="10" fill="var(--green-deep)" fontFamily="Rubik">{targetWeight}</text>
-    </svg>
   );
 }
 
