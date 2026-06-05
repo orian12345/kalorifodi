@@ -13,9 +13,10 @@ const ADMIN_PASS= process.env.ADMIN_PASSWORD || 'admin123';
 const MONGODB_URI = process.env.MONGODB_URI;
 
 // ── Database setup ─────────────────────────────────────────
-let usersCol, logsCol;
+let usersCol, logsCol, dbReady = false;
 
 async function connectDB() {
+  if (!MONGODB_URI) throw new Error('MONGODB_URI environment variable is not set');
   const client = new MongoClient(MONGODB_URI);
   await client.connect();
   const db = client.db('kalorifodi');
@@ -24,7 +25,14 @@ async function connectDB() {
   await usersCol.createIndex({ username: 1 }, { unique: true });
   await logsCol.createIndex({ userId: 1 });
   await logsCol.createIndex({ userId: 1, date: 1 }, { unique: true });
+  dbReady = true;
   console.log('✅ Connected to MongoDB Atlas');
+}
+
+// Guard: return 503 if DB not connected yet
+function dbRequired(req, res, next) {
+  if (!dbReady) return res.status(503).json({ error: 'מסד הנתונים אינו זמין. בדקי שה-MONGODB_URI מוגדר ב-Render ושה-Atlas מאפשר חיבור מכל כתובת IP (0.0.0.0/0).' });
+  next();
 }
 
 // ── Middleware ─────────────────────────────────────────────
@@ -48,7 +56,7 @@ function adminAuth(req, res, next) {
 }
 
 // ── Auth routes ────────────────────────────────────────────
-app.post('/api/auth/register', adminAuth, async (req, res) => {
+app.post('/api/auth/register', dbRequired, async (req, res) => {
   try {
     const { username, password, name } = req.body || {};
     if (!username || !password || !name)
@@ -73,7 +81,7 @@ app.post('/api/auth/register', adminAuth, async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', dbRequired, async (req, res) => {
   try {
     const { username, password } = req.body || {};
     if (!username || !password)
@@ -87,7 +95,7 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // ── User routes ────────────────────────────────────────────
-app.get('/api/user', auth, async (req, res) => {
+app.get('/api/user', dbRequired, auth, async (req, res) => {
   try {
     const u = await usersCol.findOne({ _id: new ObjectId(req.user.id) });
     if (!u) return res.status(404).json({ error: 'Not found' });
@@ -95,7 +103,7 @@ app.get('/api/user', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.put('/api/user', auth, async (req, res) => {
+app.put('/api/user', dbRequired, auth, async (req, res) => {
   try {
     await usersCol.updateOne({ _id: new ObjectId(req.user.id) }, { $set: { profile: req.body } });
     res.json({ ok: true });
@@ -103,7 +111,7 @@ app.put('/api/user', auth, async (req, res) => {
 });
 
 // ── Logs routes ────────────────────────────────────────────
-app.get('/api/logs/week', auth, async (req, res) => {
+app.get('/api/logs/week', dbRequired, auth, async (req, res) => {
   try {
     const result = {};
     for (let i = 6; i >= 0; i--) {
@@ -116,14 +124,14 @@ app.get('/api/logs/week', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/logs/:date', auth, async (req, res) => {
+app.get('/api/logs/:date', dbRequired, auth, async (req, res) => {
   try {
     const row = await logsCol.findOne({ userId: req.user.id, date: req.params.date });
     res.json(row ? { foods: row.foods, water: row.water } : { foods: [], water: 0 });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.put('/api/logs/:date', auth, async (req, res) => {
+app.put('/api/logs/:date', dbRequired, auth, async (req, res) => {
   try {
     const { foods = [], water = 0 } = req.body || {};
     await logsCol.updateOne(
@@ -276,13 +284,16 @@ app.get('*', (req, res) =>
 );
 
 // ── Start ──────────────────────────────────────────────────
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`\n🥑 קלוריפודי  →  http://localhost:${PORT}`);
-    console.log(`🔧 Admin       →  http://localhost:${PORT}/admin`);
-    console.log(`   סיסמת Admin →  ${ADMIN_PASS}\n`);
-  });
-}).catch(err => {
-  console.error('❌ Failed to connect to MongoDB:', err.message);
-  process.exit(1);
+// Start server immediately so Render health check passes even if DB is slow
+app.listen(PORT, () => {
+  console.log(`\n🥑 קלוריפודי  →  http://localhost:${PORT}`);
+  console.log(`🔧 Admin       →  http://localhost:${PORT}/admin`);
+  console.log(`   סיסמת Admin →  ${ADMIN_PASS}\n`);
+});
+
+// Connect to MongoDB after server is up
+connectDB().catch(err => {
+  console.error('❌ MongoDB connection failed:', err.message);
+  console.error('→ Go to MongoDB Atlas → Network Access → Add 0.0.0.0/0 to allow all IPs');
+  console.error('→ Make sure MONGODB_URI is set correctly in Render environment variables');
 });
