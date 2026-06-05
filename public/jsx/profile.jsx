@@ -100,6 +100,8 @@ function Profile({ user, logs, onUpdate, onReset }) {
 function WeightWidget({ user, logs, onUpdate }) {
   const [editW, setEditW]         = React.useState(false);
   const [newWeight, setNewWeight] = React.useState(String(user.weight));
+  const [editT, setEditT]         = React.useState(false);
+  const [newTarget, setNewTarget] = React.useState('');
 
   const hasTarget = !!user.targetWeight;
   const diff      = hasTarget ? +(user.weight - user.targetWeight).toFixed(1) : 0;
@@ -127,6 +129,13 @@ function WeightWidget({ user, logs, onUpdate }) {
     if (!w || w < 20 || w > 300) { setEditW(false); return; }
     onUpdate({ ...user, weight: w, targets: KP.calcTargets({ ...user, weight: w }) });
     setEditW(false);
+  };
+
+  const saveTarget = () => {
+    const w = parseFloat(newTarget);
+    if (!w || w < 20 || w > 300) { setEditT(false); return; }
+    onUpdate({ ...user, targetWeight: w });
+    setEditT(false);
   };
 
   return (
@@ -183,21 +192,55 @@ function WeightWidget({ user, logs, onUpdate }) {
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 40, color: 'var(--green-deep)', lineHeight: 1 }}>
               {user.targetWeight}<span style={{ fontSize: 14, color: 'var(--ink-soft)', marginInlineStart: 2 }}>ק״ג</span>
             </div>
-            {weeksToGoal ? (
-              <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 7 }}>~{weeksToGoal} שבועות</div>
+            {editT ? (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 5, marginTop: 7 }}>
+                <input type="number" inputMode="decimal" value={newTarget}
+                  onChange={e => setNewTarget(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && saveTarget()}
+                  autoFocus
+                  style={{ width: 66, border: 'none', background: 'var(--bg)', borderRadius: 9, padding: '6px 8px', fontSize: 17, fontFamily: 'var(--font-display)', color: 'var(--green-deep)', outline: 'none', textAlign: 'center' }} />
+                <button onClick={saveTarget} style={{ border: 'none', background: 'var(--green)', borderRadius: 9, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon.check s={15} c="#fff" />
+                </button>
+                <button onClick={() => setEditT(false)} style={{ border: 'none', background: 'var(--track)', borderRadius: 9, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon.close s={15} c="var(--ink-soft)" />
+                </button>
+              </div>
             ) : (
-              <div style={{ height: 26 }} />
+              <button onClick={() => { setNewTarget(String(user.targetWeight)); setEditT(true); }}
+                style={{ border: 'none', background: 'var(--green-soft)', borderRadius: 9, padding: '4px 14px', fontSize: 12, color: 'var(--green-deep)', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)', marginTop: 7 }}>
+                שנייה
+              </button>
             )}
           </div>
         )}
 
-        {/* no target yet */}
+        {/* no target yet — inline setter */}
         {!hasTarget && (
           <div style={{ flex: 1, textAlign: 'center' }}>
             <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 6 }}>משקל יעד</div>
-            <div style={{ fontSize: 13, color: 'var(--ink-soft)', background: 'var(--bg)', borderRadius: 12, padding: '10px', lineHeight: 1.4 }}>
-              הגדרי ב"הנתונים שלי" → עריכה
-            </div>
+            {editT ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                <input type="number" inputMode="decimal" value={newTarget}
+                  onChange={e => setNewTarget(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && saveTarget()}
+                  autoFocus placeholder="ק״ג"
+                  style={{ width: 80, border: 'none', background: 'var(--bg)', borderRadius: 12, padding: '10px 10px', fontSize: 24, fontFamily: 'var(--font-display)', color: 'var(--green-deep)', outline: 'none', textAlign: 'center' }} />
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={saveTarget} style={{ border: 'none', background: 'var(--green)', borderRadius: 9, width: 36, height: 36, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon.check s={16} c="#fff" />
+                  </button>
+                  <button onClick={() => setEditT(false)} style={{ border: 'none', background: 'var(--track)', borderRadius: 9, width: 36, height: 36, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon.close s={16} c="var(--ink-soft)" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => { setNewTarget(''); setEditT(true); }}
+                style={{ border: 'none', background: 'var(--green-soft)', borderRadius: 14, padding: '12px 16px', fontSize: 13, color: 'var(--green-deep)', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)', lineHeight: 1.4, width: '100%' }}>
+                ＋ הגדרי יעד
+              </button>
+            )}
           </div>
         )}
       </div>
