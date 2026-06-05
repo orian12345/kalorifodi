@@ -61,6 +61,8 @@ const Icon = {
   trash: (p) => <svg viewBox="0 0 24 24" width={p.s || 24} height={p.s || 24} fill="none"><path d="M5 7h14M10 7V5h4v2M6 7l1 13h10l1-13" stroke={p.c || 'currentColor'} strokeWidth={p.w || 2} strokeLinecap="round" strokeLinejoin="round" /></svg>,
   spark: (p) => <svg viewBox="0 0 24 24" width={p.s || 24} height={p.s || 24} fill="none"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" fill={p.c || 'currentColor'} /><path d="M19 14l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z" fill={p.c || 'currentColor'} /></svg>,
   minus: (p) => <svg viewBox="0 0 24 24" width={p.s || 24} height={p.s || 24} fill="none"><path d="M5 12h14" stroke={p.c || 'currentColor'} strokeWidth={p.w || 2.4} strokeLinecap="round" /></svg>,
+  book: (p) => <svg viewBox="0 0 24 24" width={p.s || 24} height={p.s || 24} fill="none"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke={p.c || 'currentColor'} strokeWidth={p.w || 2} strokeLinecap="round" strokeLinejoin="round" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke={p.c || 'currentColor'} strokeWidth={p.w || 2} strokeLinejoin="round" fill={p.fill || 'none'} /></svg>,
+  flag: (p) => <svg viewBox="0 0 24 24" width={p.s || 24} height={p.s || 24} fill="none"><path d="M4 21V4" stroke={p.c || 'currentColor'} strokeWidth={p.w || 2} strokeLinecap="round" /><path d="M4 4l14 4-14 5" stroke={p.c || 'currentColor'} strokeWidth={p.w || 2} strokeLinejoin="round" fill={p.fill || 'none'} /></svg>,
 };
 
 // ---- primary button ----

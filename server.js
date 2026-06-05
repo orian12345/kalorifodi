@@ -150,6 +150,42 @@ app.get('/api/food-search', auth, (req, res) => {
   }).on('error', () => res.json({ products: [] }));
 });
 
+// ── Meal recommendations ───────────────────────────────────
+app.post('/api/meal-recommendations', auth, async (req, res) => {
+  try {
+    const { mealType, targets, remaining } = req.body || {};
+    if (!process.env.ANTHROPIC_API_KEY)
+      return res.status(503).json({ error: 'מפתח AI לא מוגדר' });
+
+    const mealNames = { breakfast: 'ארוחת בוקר', lunch: 'ארוחת צהריים', dinner: 'ארוחת ערב', snack: 'חטיף' };
+    const goalDesc  = { lose: 'ירידה במשקל', gain: 'עלייה במשקל', maintain: 'שמירה על משקל' };
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 600,
+      messages: [{
+        role: 'user',
+        content: `אתה דיאטן ישראלי מוסמך. הצע בדיוק 3 אפשרויות ל${mealNames[mealType] || 'ארוחה'} בריאה ומאוזנת.
+מידע על המשתמש:
+- קלוריות שנותרו להיום: ${remaining || targets?.calories || 500} קק״ל
+- יעד חלבון יומי: ${targets?.protein || 50}ג׳
+- מטרה: ${goalDesc[targets?.goal] || 'שמירה על משקל'}
+
+החזר JSON בלבד (ללא טקסט נוסף):
+{"items":[{"name":"שם בעברית","desc":"תיאור קצר של המנה","kcal":מספר,"icon":"אמוגי"}]}`
+      }]
+    });
+
+    let s = (msg.content[0].text || '').trim();
+    const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fence) s = fence[1].trim();
+    const start = s.indexOf('{'); const end = s.lastIndexOf('}');
+    if (start >= 0 && end > start) s = s.slice(start, end + 1);
+    res.json(JSON.parse(s));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── Food analysis ─────────────────────────────────────────
 app.post('/api/analyze-food', auth, async (req, res) => {
   try {

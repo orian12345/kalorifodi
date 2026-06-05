@@ -87,6 +87,9 @@ function Home({ user, day, onAddFood, onWater, onRemoveFood, onOpenProfile }) {
         </Card>
       </div>
 
+      {/* meal recommendations */}
+      <MealRecommendations user={user} remaining={remaining} />
+
       {/* meals */}
       <div style={{ padding: '20px 18px 0' }}>
         {KP.MEALS.map(meal => {
@@ -150,6 +153,67 @@ function FoodRow({ it, isLast, onRemove }) {
           <Icon.trash s={17} c="var(--pink-deep)" />
         </button>
       )}
+    </div>
+  );
+}
+
+function MealRecommendations({ user, remaining }) {
+  const [recs, setRecs]       = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+
+  const h = new Date().getHours();
+  const mealType  = h < 10 ? 'breakfast' : h < 15 ? 'lunch' : h < 21 ? 'dinner' : 'snack';
+  const mealLabel = { breakfast: 'ארוחת בוקר', lunch: 'ארוחת צהריים', dinner: 'ארוחת ערב', snack: 'חטיף' }[mealType];
+
+  const fetchRecs = async () => {
+    setLoading(true);
+    try {
+      const r = await fetch('/api/meal-recommendations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API.token() },
+        body: JSON.stringify({ mealType, targets: user.targets, remaining }),
+      });
+      const data = await r.json();
+      setRecs(data.items || []);
+    } catch { setRecs([]); }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ padding: '14px 18px 0' }}>
+      <Card>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: recs && !loading ? 14 : 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Icon.spark s={18} c="var(--carb)" />
+            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)' }}>מה לאכול? · {mealLabel}</span>
+          </div>
+          <button onClick={fetchRecs} disabled={loading}
+            style={{ border: 'none', cursor: loading ? 'default' : 'pointer', background: 'var(--green-soft)', borderRadius: 10, padding: '7px 13px', fontSize: 13, fontWeight: 600, color: 'var(--green-deep)', fontFamily: 'var(--font-body)', opacity: loading ? 0.6 : 1 }}>
+            {loading ? '…' : recs ? '🔄' : 'רעיונות'}
+          </button>
+        </div>
+
+        {loading && (
+          <div className="kp-pulse" style={{ textAlign: 'center', paddingTop: 14, fontSize: 13.5, color: 'var(--ink-soft)' }}>
+            Claude מכינה המלצות…
+          </div>
+        )}
+
+        {recs && !loading && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {recs.map((rec, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg)', borderRadius: 14, padding: '12px 14px' }}>
+                <span style={{ fontSize: 26, flexShrink: 0 }}>{rec.icon || '🍽️'}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--ink)' }}>{rec.name}</div>
+                  {rec.desc && <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: 2, lineHeight: 1.4 }}>{rec.desc}</div>}
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--green-deep)', fontWeight: 700, flexShrink: 0 }}>{rec.kcal} קק״ל</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

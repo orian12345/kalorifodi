@@ -19,30 +19,30 @@ function History({ user, logs }) {
         <p style={{ fontSize: 14, color: 'var(--ink-soft)', margin: '4px 0 0' }}>7 הימים האחרונים</p>
       </div>
 
-      {/* bar chart */}
+      {/* SVG calorie + trend chart */}
       <div style={{ padding: '14px 18px 0' }}>
-        <Card style={{ padding: '20px 16px 14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <Card style={{ padding: '18px 16px 14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)' }}>קלוריות ליום</span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--ink-soft)' }}>
-              <span style={{ width: 16, height: 3, background: 'var(--pink)', borderRadius: 3, display: 'inline-block' }} />יעד {t.calories}
+              <span style={{ width: 16, height: 2, background: 'var(--pink)', borderRadius: 3, display: 'inline-block', verticalAlign: 'middle' }} />יעד {t.calories}
             </span>
           </div>
-          <div style={{ position: 'relative', height: 150, display: 'flex', alignItems: 'flex-end', gap: 8, paddingTop: 6 }}>
-            {/* target line */}
-            <div style={{ position: 'absolute', left: 0, right: 0, bottom: `${(t.calories / maxVal) * 130 + 20}px`, height: 2, background: 'var(--pink)', opacity: .55, borderRadius: 2, zIndex: 2 }} />
-            {days.map(d => {
-              const h = d.has ? Math.max(6, (d.kcal / maxVal) * 130) : 0;
-              const isToday = d.key === today;
-              const over = d.kcal > t.calories;
-              return (
-                <div key={d.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
-                  <div style={{ fontSize: 10.5, color: 'var(--ink-soft)', marginBottom: 4, fontWeight: 500 }}>{d.has ? d.kcal : ''}</div>
-                  <div style={{ width: '78%', height: h, borderRadius: 8, background: d.has ? (over ? 'var(--pink)' : 'var(--green)') : 'var(--track)', opacity: d.has ? (isToday ? 1 : .8) : 1, transition: 'height .5s', boxShadow: isToday && d.has ? '0 0 0 2px var(--green-soft)' : 'none' }} />
-                  <div style={{ fontSize: 12, color: isToday ? 'var(--green-deep)' : 'var(--ink-soft)', marginTop: 8, fontWeight: isToday ? 700 : 500 }}>{KP.dayName(d.key)}</div>
-                </div>
-              );
-            })}
+          <CalorieChart days={days} target={t.calories} today={today} />
+        </Card>
+      </div>
+
+      {/* macro breakdown chart */}
+      <div style={{ padding: '14px 18px 0' }}>
+        <Card style={{ padding: '18px 16px 14px' }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', marginBottom: 14 }}>מקרו יומי</div>
+          <MacroChart days={days} targets={t} />
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 12 }}>
+            {[['חלבון','var(--pink)'],['פחמימות','var(--carb)'],['שומן','var(--fat)']].map(([l,c]) => (
+              <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--ink-soft)' }}>
+                <span style={{ width: 10, height: 10, borderRadius: 3, background: c, display: 'inline-block' }} />{l}
+              </div>
+            ))}
           </div>
         </Card>
       </div>
@@ -82,6 +82,102 @@ function History({ user, logs }) {
         </Card>
       </div>
     </div>
+  );
+}
+
+function CalorieChart({ days, target, today }) {
+  const W = 300, H = 170, LABEL_H = 22;
+  const chartH = H - LABEL_H;
+  const maxVal = Math.max(target * 1.15, ...days.map(d => d.kcal), 100);
+  const barW = W / days.length;
+
+  // trend line through active days
+  const activePoints = days
+    .map((d, i) => d.has ? { x: i * barW + barW / 2, y: chartH - (d.kcal / maxVal) * (chartH - 14) - 4 } : null)
+    .filter(Boolean);
+  const trendPath = activePoints.length > 1
+    ? activePoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+    : null;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
+      {/* target dashed line */}
+      {(() => {
+        const ty = chartH - (target / maxVal) * (chartH - 14) - 4;
+        return <line x1={0} y1={ty} x2={W} y2={ty} stroke="var(--pink)" strokeWidth="1.5" strokeDasharray="5 4" opacity="0.55" />;
+      })()}
+
+      {/* bars */}
+      {days.map((d, i) => {
+        const bh = d.has ? Math.max(5, (d.kcal / maxVal) * (chartH - 14)) : 3;
+        const bx = i * barW + barW * 0.14;
+        const bw = barW * 0.72;
+        const by = d.has ? chartH - bh - 4 : chartH - 7;
+        const isToday = d.key === today;
+        const over = d.kcal > target;
+        return (
+          <g key={d.key}>
+            <rect x={bx} y={by} width={bw} height={bh} rx="6"
+              fill={d.has ? (over ? 'var(--pink)' : 'var(--green)') : 'var(--track)'}
+              opacity={d.has ? (isToday ? 1 : 0.75) : 1} />
+            {isToday && d.has && <rect x={bx - 2} y={by - 2} width={bw + 4} height={bh + 4} rx="8" fill="none" stroke="var(--green)" strokeWidth="1.5" opacity="0.4" />}
+            {d.has && (
+              <text x={bx + bw / 2} y={by - 5} textAnchor="middle" fontSize="9" fill="var(--ink-soft)" fontFamily="Rubik">{d.kcal}</text>
+            )}
+            <text x={bx + bw / 2} y={H - 3} textAnchor="middle" fontSize="10"
+              fill={isToday ? 'var(--green-deep)' : 'var(--ink-soft)'}
+              fontFamily="Rubik" fontWeight={isToday ? '700' : '500'}>{KP.dayName(d.key)}</text>
+          </g>
+        );
+      })}
+
+      {/* trend line */}
+      {trendPath && (
+        <path d={trendPath} stroke="var(--ink)" strokeWidth="1.5" fill="none"
+          strokeDasharray="0" strokeLinejoin="round" strokeLinecap="round" opacity="0.22" />
+      )}
+    </svg>
+  );
+}
+
+function MacroChart({ days, targets }) {
+  const W = 300, H = 100, LABEL_H = 20;
+  const chartH = H - LABEL_H;
+  const barW = W / days.length;
+  const maxP = targets.protein, maxC = targets.carbs, maxF = targets.fat;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
+      {days.map((d, i) => {
+        const bx = i * barW + barW * 0.1;
+        const bw = barW * 0.8;
+        const maxStack = Math.max(maxP + maxC + maxF, d.p + d.c + d.f, 1);
+        const total = d.p + d.c + d.f;
+        const scale = d.has ? Math.min(1, total / maxStack) * (chartH - 4) : 3;
+        const pH = d.has ? (d.p / Math.max(total, 1)) * scale : 0;
+        const cH = d.has ? (d.c / Math.max(total, 1)) * scale : 0;
+        const fH = d.has ? (d.f / Math.max(total, 1)) * scale : 0;
+        let y = chartH;
+        return (
+          <g key={d.key}>
+            {d.has ? (
+              <>
+                {[{h: fH, c: 'var(--fat)'},{h: cH, c: 'var(--carb)'},{h: pH, c: 'var(--pink)'}].map(({h,c}, si) => {
+                  y -= h;
+                  return <rect key={si} x={bx} y={y} width={bw} height={h}
+                    rx={si === 2 ? 4 : 0} fill={c} opacity="0.82" />;
+                })}
+              </>
+            ) : (
+              <rect x={bx} y={chartH - 3} width={bw} height={3} rx="3" fill="var(--track)" />
+            )}
+            <text x={bx + bw / 2} y={H - 3} textAnchor="middle" fontSize="10"
+              fill={d.key === KP.TODAY() ? 'var(--green-deep)' : 'var(--ink-soft)'}
+              fontFamily="Rubik" fontWeight={d.key === KP.TODAY() ? '700' : '500'}>{KP.dayName(d.key)}</text>
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 
