@@ -104,41 +104,37 @@ function Onboarding({ onComplete }) {
 
   // step 3: body metrics
   if (step === 3) {
-    const Metric = ({ label, k, min, max, unit, stp = 1 }) => {
-      const val = p[k];
-      const dec = () => set(k, Math.max(min, val - stp));
-      const inc = () => set(k, Math.min(max, val + stp));
-      const btnStyle = (disabled) => ({
-        width: 52, height: 52, borderRadius: 16, border: 'none', cursor: disabled ? 'default' : 'pointer',
-        background: disabled ? 'var(--track)' : 'var(--card)',
-        boxShadow: disabled ? 'none' : '0 2px 10px -5px rgba(0,0,0,.25)',
-        fontSize: 26, fontWeight: 400, color: disabled ? 'var(--ink-soft)' : 'var(--ink)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        WebkitUserSelect: 'none', userSelect: 'none', flexShrink: 0,
-        transition: 'transform .08s',
-      });
+    const Metric = ({ label, k, min, max, unit }) => {
+      const [val, setVal] = React.useState(String(p[k]));
+      const commit = (str) => {
+        const n = Math.min(max, Math.max(min, parseInt(str, 10) || min));
+        set(k, n);
+        setVal(String(n));
+      };
       return (
-        <div style={{ marginBottom: 22, background: 'var(--card)', borderRadius: 20, padding: '16px 18px', boxShadow: 'inset 0 0 0 1.5px var(--line)' }}>
-          <div style={{ fontSize: 13.5, color: 'var(--ink-soft)', fontWeight: 500, marginBottom: 14 }}>{label}</div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <button style={btnStyle(val <= min)} onClick={dec}
-              onPointerDown={e => { e.currentTarget.style.transform = 'scale(.9)'; }}
-              onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-              onPointerLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}>−</button>
-            <div style={{ textAlign: 'center', flex: 1 }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 42, color: 'var(--green-deep)', lineHeight: 1 }}>{val}</span>
-              <span style={{ fontSize: 14, color: 'var(--ink-soft)', marginInlineStart: 5 }}>{unit}</span>
-            </div>
-            <button style={btnStyle(val >= max)} onClick={inc}
-              onPointerDown={e => { e.currentTarget.style.transform = 'scale(.9)'; }}
-              onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-              onPointerLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}>+</button>
+        <div style={{ marginBottom: 16, background: 'var(--card)', borderRadius: 20, padding: '16px 18px', boxShadow: 'inset 0 0 0 1.5px var(--line)' }}>
+          <div style={{ fontSize: 13.5, color: 'var(--ink-soft)', fontWeight: 500, marginBottom: 10 }}>{label}</div>
+          <div style={{ position: 'relative' }}>
+            <input
+              type="number" inputMode="numeric"
+              value={val}
+              onChange={e => setVal(e.target.value)}
+              onBlur={e => commit(e.target.value)}
+              style={{
+                width: '100%', boxSizing: 'border-box', border: 'none',
+                background: 'var(--bg)', borderRadius: 14,
+                padding: '16px 60px 16px 20px',
+                fontSize: 38, fontFamily: 'var(--font-display)',
+                color: 'var(--green-deep)', outline: 'none',
+              }}
+            />
+            <span style={{ position: 'absolute', insetInlineEnd: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 15, color: 'var(--ink-soft)', fontWeight: 500 }}>{unit}</span>
           </div>
         </div>
       );
     };
     return (
-      <Shell title="קצת נתונים עלייך" sub="הזיני גיל, גובה ומשקל מדויקים ככל האפשר" canNext onNext={next}>
+      <Shell title="קצת נתונים עלייך" sub="הקלידי גיל, גובה ומשקל" canNext onNext={next}>
         <Metric label="גיל" k="age" min={14} max={90} unit="שנים" />
         <Metric label="גובה" k="height" min={130} max={210} unit='ס״מ' />
         <Metric label="משקל" k="weight" min={35} max={160} unit='ק״ג' />

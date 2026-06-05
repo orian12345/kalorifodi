@@ -107,25 +107,30 @@ function Row({ label, value, last }) {
 }
 
 function EditMetric({ label, k, min, max, unit, p, set }) {
-  const val = p[k];
-  const btnSt = (disabled) => ({
-    width: 44, height: 44, borderRadius: 14, border: 'none', cursor: disabled ? 'default' : 'pointer',
-    background: disabled ? 'var(--track)' : 'var(--card)',
-    boxShadow: disabled ? 'none' : '0 2px 8px -4px rgba(0,0,0,.2)',
-    fontSize: 22, color: disabled ? 'var(--ink-soft)' : 'var(--ink)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    WebkitUserSelect: 'none', userSelect: 'none', flexShrink: 0,
-  });
+  const [val, setVal] = React.useState(String(p[k]));
+  const commit = (str) => {
+    const n = Math.min(max, Math.max(min, parseInt(str, 10) || min));
+    set(k, n);
+    setVal(String(n));
+  };
   return (
     <div style={{ marginBottom: 14, background: 'var(--bg)', borderRadius: 16, padding: '12px 14px' }}>
       <div style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 500, marginBottom: 10 }}>{label}</div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-        <button style={btnSt(val <= min)} onClick={() => set(k, Math.max(min, val - 1))}>−</button>
-        <div style={{ textAlign: 'center', flex: 1 }}>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 32, color: 'var(--green-deep)' }}>{val}</span>
-          <span style={{ fontSize: 13, color: 'var(--ink-soft)', marginInlineStart: 4 }}>{unit}</span>
-        </div>
-        <button style={btnSt(val >= max)} onClick={() => set(k, Math.min(max, val + 1))}>+</button>
+      <div style={{ position: 'relative' }}>
+        <input
+          type="number" inputMode="numeric"
+          value={val}
+          onChange={e => setVal(e.target.value)}
+          onBlur={e => commit(e.target.value)}
+          style={{
+            width: '100%', boxSizing: 'border-box', border: 'none',
+            background: 'var(--card)', borderRadius: 14,
+            padding: '16px 60px 16px 20px',
+            fontSize: 38, fontFamily: 'var(--font-display)',
+            color: 'var(--green-deep)', outline: 'none',
+          }}
+        />
+        <span style={{ position: 'absolute', insetInlineEnd: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 15, color: 'var(--ink-soft)', fontWeight: 500 }}>{unit}</span>
       </div>
     </div>
   );
