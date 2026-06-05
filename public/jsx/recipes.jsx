@@ -52,6 +52,9 @@ function Recipes() {
 
   const doSearch = async () => {
     if (!searchQ.trim()) return;
+    setCategory(null);
+    setView('meals');
+    setMeals([]);
     setLoading(true);
     setSearchRes(null);
     try {
@@ -146,7 +149,7 @@ function Recipes() {
             <Icon.back s={20} c="var(--ink)" />
           </button>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--ink)', margin: 0 }}>
-            {category?.emoji} {category?.label}
+            {category ? `${category.emoji} ${category.label}` : `חיפוש: "${searchQ}"`}
           </h1>
         </div>
         <div style={{ padding: '16px 18px 0' }}>

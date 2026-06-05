@@ -160,13 +160,14 @@ function FoodRow({ it, isLast, onRemove }) {
 function MealRecommendations({ user, remaining }) {
   const [recs, setRecs]       = React.useState(null);
   const [loading, setLoading] = React.useState(false);
+  const [errMsg, setErrMsg]   = React.useState('');
 
   const h = new Date().getHours();
   const mealType  = h < 10 ? 'breakfast' : h < 15 ? 'lunch' : h < 21 ? 'dinner' : 'snack';
   const mealLabel = { breakfast: 'ארוחת בוקר', lunch: 'ארוחת צהריים', dinner: 'ארוחת ערב', snack: 'חטיף' }[mealType];
 
   const fetchRecs = async () => {
-    setLoading(true);
+    setLoading(true); setErrMsg('');
     try {
       const r = await fetch('/api/meal-recommendations', {
         method: 'POST',
@@ -174,15 +175,16 @@ function MealRecommendations({ user, remaining }) {
         body: JSON.stringify({ mealType, targets: user.targets, remaining }),
       });
       const data = await r.json();
-      setRecs(data.items || []);
-    } catch { setRecs([]); }
+      if (!r.ok) { setErrMsg(data.error || 'שגיאה בשרת'); setRecs(null); }
+      else setRecs(data.items || []);
+    } catch { setErrMsg('לא ניתן להתחבר לשרת'); setRecs(null); }
     setLoading(false);
   };
 
   return (
     <div style={{ padding: '14px 18px 0' }}>
       <Card>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: recs && !loading ? 14 : 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: (recs && !loading) || errMsg ? 14 : 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Icon.spark s={18} c="var(--carb)" />
             <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)' }}>מה לאכול? · {mealLabel}</span>
@@ -199,9 +201,17 @@ function MealRecommendations({ user, remaining }) {
           </div>
         )}
 
+        {errMsg && !loading && (
+          <div style={{ background: 'var(--pink-soft)', color: 'var(--pink-deep)', borderRadius: 12, padding: '10px 14px', fontSize: 13, textAlign: 'center' }}>
+            ⚠️ {errMsg}
+          </div>
+        )}
+
         {recs && !loading && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {recs.map((rec, i) => (
+            {recs.length === 0 ? (
+              <div style={{ textAlign: 'center', fontSize: 13.5, color: 'var(--ink-soft)', padding: '8px 0' }}>לא התקבלו המלצות, נסי שוב</div>
+            ) : recs.map((rec, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg)', borderRadius: 14, padding: '12px 14px' }}>
                 <span style={{ fontSize: 26, flexShrink: 0 }}>{rec.icon || '🍽️'}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
