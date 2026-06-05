@@ -1,26 +1,31 @@
-const express    = require('express');
-const Datastore  = require('@seald-io/nedb');
-const bcrypt     = require('bcryptjs');
-const jwt        = require('jsonwebtoken');
-const path       = require('path');
-const fs         = require('fs');
-const https      = require('https');
-const Anthropic  = require('@anthropic-ai/sdk');
+const express   = require('express');
+const { MongoClient, ObjectId } = require('mongodb');
+const bcrypt    = require('bcryptjs');
+const jwt       = require('jsonwebtoken');
+const path      = require('path');
+const https     = require('https');
+const Anthropic = require('@anthropic-ai/sdk');
 
 const app       = express();
 const PORT      = process.env.PORT || 3000;
 const SECRET    = process.env.JWT_SECRET || 'kalorifodi_secret_2025';
 const ADMIN_PASS= process.env.ADMIN_PASSWORD || 'admin123';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 // ── Database setup ─────────────────────────────────────────
-const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+let usersCol, logsCol;
 
-const users = new Datastore({ filename: path.join(dataDir, 'users.db'), autoload: true });
-const logs  = new Datastore({ filename: path.join(dataDir, 'logs.db'),  autoload: true });
-
-users.ensureIndex({ fieldName: 'username', unique: true });
-logs.ensureIndex({ fieldName: 'userId' });
+async function connectDB() {
+  const client = new MongoClient(MONGODB_URI);
+  await client.connect();
+  const db = client.db('kalorifodi');
+  usersCol = db.collection('users');
+  logsCol  = db.collection('logs');
+  await usersCol.createIndex({ username: 1 }, { unique: true });
+  await logsCol.createIndex({ userId: 1 });
+  await logsCol.createIndex({ userId: 1, date: 1 }, { unique: true });
+  console.log('✅ Connected to MongoDB Atlas');
+}
 
 // ── Middleware ─────────────────────────────────────────────
 app.use(express.json());
@@ -43,7 +48,6 @@ function adminAuth(req, res, next) {
 }
 
 // ── Auth routes ────────────────────────────────────────────
-// הרשמה — רק דרך פאנל הניהול (adminAuth)
 app.post('/api/auth/register', adminAuth, async (req, res) => {
   try {
     const { username, password, name } = req.body || {};
@@ -55,14 +59,15 @@ app.post('/api/auth/register', adminAuth, async (req, res) => {
       return res.status(400).json({ error: 'סיסמה קצרה מדי' });
 
     const hash = bcrypt.hashSync(password, 10);
-    const user = await users.insertAsync({
+    const result = await usersCol.insertOne({
       username: username.toLowerCase(), password_hash: hash,
       name, profile: null, createdAt: Date.now()
     });
-    const token = jwt.sign({ id: user._id, username: user.username, name }, SECRET, { expiresIn: '30d' });
-    res.json({ token, name, username: user.username, hasProfile: false });
+    const userId = result.insertedId.toString();
+    const token = jwt.sign({ id: userId, username: username.toLowerCase(), name }, SECRET, { expiresIn: '30d' });
+    res.json({ token, name, username: username.toLowerCase(), hasProfile: false });
   } catch (e) {
-    if (e.errorType === 'uniqueViolated')
+    if (e.code === 11000)
       return res.status(409).json({ error: 'שם המשתמש תפוס' });
     res.status(500).json({ error: e.message });
   }
@@ -73,10 +78,10 @@ app.post('/api/auth/login', async (req, res) => {
     const { username, password } = req.body || {};
     if (!username || !password)
       return res.status(400).json({ error: 'חסרים שדות' });
-    const user = await users.findOneAsync({ username: username.toLowerCase() });
+    const user = await usersCol.findOne({ username: username.toLowerCase() });
     if (!user || !bcrypt.compareSync(password, user.password_hash))
       return res.status(401).json({ error: 'שם משתמש או סיסמה שגויים' });
-    const token = jwt.sign({ id: user._id, username: user.username, name: user.name }, SECRET, { expiresIn: '30d' });
+    const token = jwt.sign({ id: user._id.toString(), username: user.username, name: user.name }, SECRET, { expiresIn: '30d' });
     res.json({ token, name: user.name, username: user.username, hasProfile: !!user.profile });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -84,15 +89,15 @@ app.post('/api/auth/login', async (req, res) => {
 // ── User routes ────────────────────────────────────────────
 app.get('/api/user', auth, async (req, res) => {
   try {
-    const u = await users.findOneAsync({ _id: req.user.id });
+    const u = await usersCol.findOne({ _id: new ObjectId(req.user.id) });
     if (!u) return res.status(404).json({ error: 'Not found' });
-    res.json({ id: u._id, username: u.username, name: u.name, profile: u.profile || null });
+    res.json({ id: u._id.toString(), username: u.username, name: u.name, profile: u.profile || null });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.put('/api/user', auth, async (req, res) => {
   try {
-    await users.updateAsync({ _id: req.user.id }, { $set: { profile: req.body } });
+    await usersCol.updateOne({ _id: new ObjectId(req.user.id) }, { $set: { profile: req.body } });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -104,7 +109,7 @@ app.get('/api/logs/week', auth, async (req, res) => {
     for (let i = 6; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i);
       const date = d.toISOString().slice(0, 10);
-      const row = await logs.findOneAsync({ userId: req.user.id, date });
+      const row = await logsCol.findOne({ userId: req.user.id, date });
       result[date] = row ? { foods: row.foods, water: row.water } : { foods: [], water: 0 };
     }
     res.json(result);
@@ -113,7 +118,7 @@ app.get('/api/logs/week', auth, async (req, res) => {
 
 app.get('/api/logs/:date', auth, async (req, res) => {
   try {
-    const row = await logs.findOneAsync({ userId: req.user.id, date: req.params.date });
+    const row = await logsCol.findOne({ userId: req.user.id, date: req.params.date });
     res.json(row ? { foods: row.foods, water: row.water } : { foods: [], water: 0 });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -121,12 +126,11 @@ app.get('/api/logs/:date', auth, async (req, res) => {
 app.put('/api/logs/:date', auth, async (req, res) => {
   try {
     const { foods = [], water = 0 } = req.body || {};
-    const existing = await logs.findOneAsync({ userId: req.user.id, date: req.params.date });
-    if (existing) {
-      await logs.updateAsync({ _id: existing._id }, { $set: { foods, water, updatedAt: Date.now() } });
-    } else {
-      await logs.insertAsync({ userId: req.user.id, date: req.params.date, foods, water, updatedAt: Date.now() });
-    }
+    await logsCol.updateOne(
+      { userId: req.user.id, date: req.params.date },
+      { $set: { foods, water, updatedAt: Date.now() } },
+      { upsert: true }
+    );
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -198,31 +202,31 @@ app.post('/api/admin/login', (req, res) => {
 app.get('/api/admin/stats', adminAuth, async (req, res) => {
   try {
     const today = new Date().toISOString().slice(0, 10);
-    const totalUsers  = await users.countAsync({});
-    const totalLogs   = await logs.countAsync({});
-    const todayLogs   = await logs.findAsync({ date: today });
+    const totalUsers  = await usersCol.countDocuments({});
+    const totalLogs   = await logsCol.countDocuments({});
+    const todayLogs   = await logsCol.find({ date: today }).toArray();
     res.json({ totalUsers, totalLogs, activeToday: new Set(todayLogs.map(l => l.userId)).size });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/admin/users', adminAuth, async (req, res) => {
   try {
-    const all = await users.findAsync({}).sort({ createdAt: -1 });
-    res.json(all.map(u => ({ id: u._id, username: u.username, name: u.name, profile: u.profile, created_at: Math.floor(u.createdAt / 1000) })));
+    const all = await usersCol.find({}).sort({ createdAt: -1 }).toArray();
+    res.json(all.map(u => ({ id: u._id.toString(), username: u.username, name: u.name, profile: u.profile, created_at: Math.floor(u.createdAt / 1000) })));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/admin/users/:id/logs', adminAuth, async (req, res) => {
   try {
-    const userLogs = await logs.findAsync({ userId: req.params.id }).sort({ date: -1 }).limit(30);
+    const userLogs = await logsCol.find({ userId: req.params.id }).sort({ date: -1 }).limit(30).toArray();
     res.json(userLogs.map(l => ({ date: l.date, foods: l.foods, water: l.water })));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.delete('/api/admin/users/:id', adminAuth, async (req, res) => {
   try {
-    await logs.removeAsync({ userId: req.params.id }, { multi: true });
-    await users.removeAsync({ _id: req.params.id }, {});
+    await logsCol.deleteMany({ userId: req.params.id });
+    await usersCol.deleteOne({ _id: new ObjectId(req.params.id) });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -235,8 +239,14 @@ app.get('*', (req, res) =>
   res.sendFile(path.join(__dirname, 'public', 'index.html'))
 );
 
-app.listen(PORT, () => {
-  console.log(`\n🥑 קלוריפודי  →  http://localhost:${PORT}`);
-  console.log(`🔧 Admin       →  http://localhost:${PORT}/admin`);
-  console.log(`   סיסמת Admin →  ${ADMIN_PASS}\n`);
+// ── Start ──────────────────────────────────────────────────
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`\n🥑 קלוריפודי  →  http://localhost:${PORT}`);
+    console.log(`🔧 Admin       →  http://localhost:${PORT}/admin`);
+    console.log(`   סיסמת Admin →  ${ADMIN_PASS}\n`);
+  });
+}).catch(err => {
+  console.error('❌ Failed to connect to MongoDB:', err.message);
+  process.exit(1);
 });
