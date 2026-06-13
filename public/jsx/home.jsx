@@ -1,11 +1,17 @@
 /* ============================================================
    קלוריפודי — Home dashboard
    ============================================================ */
+const WORKOUT_KCAL_PER_MIN = {
+  gym: 6, run: 10, strength: 7, walk: 4, cycle: 8, swim: 9, yoga: 3, sport: 8, other: 5,
+};
+
 function Home({ user, day, onAddFood, onWater, onRemoveFood, onOpenProfile }) {
   const t = user.targets;
   const tot = KP.dayTotals(day);
-  const remaining = Math.max(0, t.calories - tot.kcal);
-  const over = tot.kcal > t.calories;
+  const burned = (day.workouts || []).reduce((s, w) => s + (WORKOUT_KCAL_PER_MIN[w.type] || 5) * (w.duration || 0), 0);
+  const budget = t.calories + burned;
+  const remaining = Math.max(0, budget - tot.kcal);
+  const over = tot.kcal > budget;
 
   const hour = new Date().getHours();
   const greet = hour < 11 ? 'בוקר טוב' : hour < 17 ? 'צהריים טובים' : hour < 21 ? 'ערב טוב' : 'לילה טוב';
@@ -33,8 +39,8 @@ function Home({ user, day, onAddFood, onWater, onRemoveFood, onOpenProfile }) {
       <div style={{ padding: '18px 18px 0' }}>
         <Card style={{ padding: '26px 18px 22px', position: 'relative', overflow: 'hidden' }}>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <Ring size={210} stroke={20} value={tot.kcal} max={t.calories} color={over ? 'var(--pink)' : 'var(--green)'}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 50, color: 'var(--ink)', lineHeight: 1 }}>{over ? tot.kcal - t.calories : remaining}</div>
+            <Ring size={210} stroke={20} value={tot.kcal} max={budget} color={over ? 'var(--pink)' : 'var(--green)'}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 50, color: 'var(--ink)', lineHeight: 1 }}>{over ? tot.kcal - budget : remaining}</div>
               <div style={{ fontSize: 14, color: 'var(--ink-soft)', marginTop: 4 }}>{over ? 'קק״ל מעל היעד' : 'קק״ל נותרו'}</div>
             </Ring>
           </div>
@@ -43,7 +49,7 @@ function Home({ user, day, onAddFood, onWater, onRemoveFood, onOpenProfile }) {
             <div style={{ width: 1, background: 'var(--line)', margin: '4px 0' }} />
             <Stat label="יעד" value={t.calories} />
             <div style={{ width: 1, background: 'var(--line)', margin: '4px 0' }} />
-            <Stat label="פעילות" value="—" />
+            <Stat label="פעילות" value={burned > 0 ? `+${burned}` : '—'} />
           </div>
         </Card>
       </div>
