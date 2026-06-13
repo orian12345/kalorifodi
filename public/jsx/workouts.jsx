@@ -2,15 +2,17 @@
    קלוריפודי — Workouts tab
    ============================================================ */
 const WORKOUT_TYPES = [
-  { id: 'gym',      label: 'חדר כושר', icon: '🏋️' },
-  { id: 'run',      label: 'ריצה',     icon: '🏃' },
-  { id: 'strength', label: 'כוח',      icon: '💪' },
-  { id: 'walk',     label: 'הליכה',    icon: '🚶' },
-  { id: 'cycle',    label: 'אופניים',  icon: '🚴' },
-  { id: 'swim',     label: 'שחייה',    icon: '🏊' },
-  { id: 'yoga',     label: 'יוגה',     icon: '🧘' },
-  { id: 'sport',    label: 'ספורט',    icon: '⚽' },
-  { id: 'other',    label: 'אחר',      icon: '🤸' },
+  { id: 'gym',             label: 'חדר כושר',        icon: '🏋️' },
+  { id: 'run',             label: 'ריצה',            icon: '🏃' },
+  { id: 'strength',        label: 'אימון כוח',       icon: '💪' },
+  { id: 'walk',            label: 'הליכה',           icon: '🚶' },
+  { id: 'cycle',           label: 'אופניים',         icon: '🚴' },
+  { id: 'swim',            label: 'שחייה',           icon: '🏊' },
+  { id: 'yoga',            label: 'יוגה',            icon: '🧘' },
+  { id: 'pilates_mat',     label: 'פילאטיס מזרן',    icon: '🤸‍♀️' },
+  { id: 'pilates_machine', label: 'פילאטיס מכשירים', icon: '🛠️' },
+  { id: 'sport',           label: 'ספורט',           icon: '⚽' },
+  { id: 'other',           label: 'אחר',             icon: '🤸' },
 ];
 
 function Workouts({ user, logs, onAddWorkout }) {

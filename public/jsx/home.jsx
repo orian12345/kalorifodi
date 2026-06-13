@@ -2,7 +2,8 @@
    קלוריפודי — Home dashboard
    ============================================================ */
 const WORKOUT_KCAL_PER_MIN = {
-  gym: 6, run: 10, strength: 7, walk: 4, cycle: 8, swim: 9, yoga: 3, sport: 8, other: 5,
+  gym: 6, run: 10, strength: 7, walk: 4, cycle: 8, swim: 9, yoga: 3,
+  pilates_mat: 4, pilates_machine: 5, sport: 8, other: 5,
 };
 
 function Home({ user, day, onAddFood, onWater, onRemoveFood, onOpenProfile }) {
