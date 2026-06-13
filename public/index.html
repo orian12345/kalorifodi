@@ -37,12 +37,8 @@
     -webkit-font-smoothing: antialiased;
     overflow: hidden;
   }
-  body {
-    display: flex; align-items: center; justify-content: center;
-    background: radial-gradient(120% 80% at 50% 0%, #F3EEE9 0%, #E7E2DC 60%, #DED8D1 100%);
-  }
-  #app { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-  #deviceWrap { transform-origin: center center; }
+  body { background: var(--bg); }
+  #app { width: 100%; height: 100dvh; }
   button { font-family: var(--font-body); }
   input  { font-family: var(--font-body); }
   ::selection { background: var(--green-soft); }
@@ -69,9 +65,9 @@
   input[type=number] { -moz-appearance: textfield; }
   ::-webkit-scrollbar { width: 0; height: 0; }
 
-  @media (max-width: 500px) {
-    body { background: var(--bg); display: block; }
-    #app { width: 100%; height: 100dvh; display: block; }
+  /* Desktop: max-width centered layout */
+  @media (min-width: 768px) {
+    #app { max-width: 900px; margin: 0 auto; box-shadow: 0 0 60px rgba(0,0,0,.08); }
   }
 </style>
 </head>
@@ -100,6 +96,7 @@
   <script type="text/babel" src="jsx/history.jsx"></script>
   <script type="text/babel" src="jsx/profile.jsx"></script>
   <script type="text/babel" src="jsx/recipes.jsx"></script>
+  <script type="text/babel" src="jsx/workouts.jsx"></script>
   <script type="text/babel" src="jsx/app.jsx"></script>
 
   <script>

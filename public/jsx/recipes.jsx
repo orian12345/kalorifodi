@@ -24,6 +24,8 @@ function Recipes() {
   const [loading, setLoading] = React.useState(false);
   const [searchQ, setSearchQ] = React.useState('');
   const [searchRes, setSearchRes] = React.useState(null);
+  const [calories, setCalories]   = React.useState(null);
+  const [calLoading, setCalLoading] = React.useState(false);
 
   const loadMeals = async (cat) => {
     setCategory(cat);
@@ -40,6 +42,7 @@ function Recipes() {
 
   const loadDetail = async (meal) => {
     setDetail(null);
+    setCalories(null);
     setView('detail');
     setLoading(true);
     try {
@@ -48,6 +51,22 @@ function Recipes() {
       setDetail(data.meals?.[0] || null);
     } catch {}
     setLoading(false);
+  };
+
+  const estimateCalories = async () => {
+    if (!detail) return;
+    setCalLoading(true);
+    try {
+      const ings = getIngredients(detail);
+      const r = await fetch('/api/estimate-recipe-calories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API.token() },
+        body: JSON.stringify({ mealName: detail.strMeal, ingredients: ings }),
+      });
+      const data = await r.json();
+      setCalories(data.error ? null : data);
+    } catch {}
+    setCalLoading(false);
   };
 
   const doSearch = async () => {
@@ -113,6 +132,38 @@ function Recipes() {
                 </div>
               ))}
             </Card>
+
+            {/* calorie estimate */}
+            <div style={{ marginBottom: 18 }}>
+              {!calories && !calLoading && (
+                <button onClick={estimateCalories} style={{ width: '100%', border: 'none', cursor: 'pointer', background: 'var(--green-soft)', borderRadius: 16, padding: '14px', fontSize: 14, fontWeight: 600, color: 'var(--green-deep)', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <Icon.spark s={16} c="var(--green-deep)" /> חשבי קלוריות למתכון 🤖
+                </button>
+              )}
+              {calLoading && (
+                <div className="kp-pulse" style={{ textAlign: 'center', padding: '14px', fontSize: 13.5, color: 'var(--ink-soft)' }}>Claude מחשבת קלוריות…</div>
+              )}
+              {calories && !calLoading && (
+                <Card style={{ padding: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <Icon.spark s={16} c="var(--carb)" />
+                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>הערכה קלורית</span>
+                    <span style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginInlineStart: 'auto' }}>הערכת AI</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <div style={{ background: 'var(--bg)', borderRadius: 12, padding: '12px', textAlign: 'center' }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, color: 'var(--green-deep)' }}>{calories.totalKcal}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>קק״ל סה״כ</div>
+                    </div>
+                    <div style={{ background: 'var(--bg)', borderRadius: 12, padding: '12px', textAlign: 'center' }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, color: 'var(--ink)' }}>{calories.perServing}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>קק״ל למנה ({calories.servings} מנות)</div>
+                    </div>
+                  </div>
+                  {calories.note && <div style={{ marginTop: 10, fontSize: 12.5, color: 'var(--ink-soft)', textAlign: 'center', lineHeight: 1.4 }}>{calories.note}</div>}
+                </Card>
+              )}
+            </div>
 
             {detail.strInstructions && (
               <>

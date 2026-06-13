@@ -157,46 +157,78 @@ function FoodRow({ it, isLast, onRemove }) {
   );
 }
 
+const MEAL_TYPES = [
+  { id: 'breakfast', label: 'בוקר',   icon: '🌅' },
+  { id: 'lunch',     label: 'צהריים', icon: '☀️' },
+  { id: 'dinner',    label: 'ערב',    icon: '🌙' },
+  { id: 'snack',     label: 'חטיף',   icon: '🍎' },
+];
+
 function MealRecommendations({ user, remaining }) {
   const [recs, setRecs]       = React.useState(null);
   const [loading, setLoading] = React.useState(false);
   const [errMsg, setErrMsg]   = React.useState('');
+  const [round, setRound]     = React.useState(0);
 
   const h = new Date().getHours();
-  const mealType  = h < 10 ? 'breakfast' : h < 15 ? 'lunch' : h < 21 ? 'dinner' : 'snack';
-  const mealLabel = { breakfast: 'ארוחת בוקר', lunch: 'ארוחת צהריים', dinner: 'ארוחת ערב', snack: 'חטיף' }[mealType];
+  const defaultType = h < 10 ? 'breakfast' : h < 15 ? 'lunch' : h < 21 ? 'dinner' : 'snack';
+  const [mealType, setMealType] = React.useState(defaultType);
 
-  const fetchRecs = async () => {
+  const fetchRecs = async (type, r) => {
+    const mt = type || mealType;
+    const rd = r !== undefined ? r : round;
     setLoading(true); setErrMsg('');
     try {
-      const r = await fetch('/api/meal-recommendations', {
+      const res = await fetch('/api/meal-recommendations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API.token() },
-        body: JSON.stringify({ mealType, targets: user.targets, remaining }),
+        body: JSON.stringify({ mealType: mt, targets: user.targets, remaining, round: rd }),
       });
-      const data = await r.json();
-      if (!r.ok) { setErrMsg(data.error || 'שגיאה בשרת'); setRecs(null); }
-      else setRecs(data.items || []);
+      const data = await res.json();
+      if (!res.ok) { setErrMsg(data.error || 'שגיאה בשרת'); setRecs(null); }
+      else { setRecs(data.items || []); setRound(rd + 1); }
     } catch { setErrMsg('לא ניתן להתחבר לשרת'); setRecs(null); }
     setLoading(false);
+  };
+
+  const switchMeal = (id) => {
+    setMealType(id);
+    setRecs(null);
+    setErrMsg('');
   };
 
   return (
     <div style={{ padding: '14px 18px 0' }}>
       <Card>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: (recs && !loading) || errMsg ? 14 : 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Icon.spark s={18} c="var(--carb)" />
-            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)' }}>מה לאכול? · {mealLabel}</span>
+            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)' }}>מה לאכול?</span>
           </div>
-          <button onClick={fetchRecs} disabled={loading}
+          <button onClick={() => fetchRecs(mealType, round)} disabled={loading}
             style={{ border: 'none', cursor: loading ? 'default' : 'pointer', background: 'var(--green-soft)', borderRadius: 10, padding: '7px 13px', fontSize: 13, fontWeight: 600, color: 'var(--green-deep)', fontFamily: 'var(--font-body)', opacity: loading ? 0.6 : 1 }}>
-            {loading ? '…' : recs ? '🔄' : 'רעיונות'}
+            {loading ? '…' : recs ? '🔄 עוד רעיונות' : 'רעיונות'}
           </button>
         </div>
 
+        {/* meal type selector */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: (recs || loading || errMsg) ? 14 : 0 }}>
+          {MEAL_TYPES.map(m => (
+            <button key={m.id} onClick={() => switchMeal(m.id)} style={{
+              flex: 1, border: 'none', cursor: 'pointer', borderRadius: 10, padding: '7px 4px',
+              background: mealType === m.id ? 'var(--green)' : 'var(--bg)',
+              color: mealType === m.id ? '#fff' : 'var(--ink-soft)',
+              fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-body)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+            }}>
+              <span style={{ fontSize: 14 }}>{m.icon}</span>
+              {m.label}
+            </button>
+          ))}
+        </div>
+
         {loading && (
-          <div className="kp-pulse" style={{ textAlign: 'center', paddingTop: 14, fontSize: 13.5, color: 'var(--ink-soft)' }}>
+          <div className="kp-pulse" style={{ textAlign: 'center', paddingTop: 6, paddingBottom: 6, fontSize: 13.5, color: 'var(--ink-soft)' }}>
             Claude מכינה המלצות…
           </div>
         )}

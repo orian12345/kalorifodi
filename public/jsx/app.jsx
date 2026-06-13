@@ -76,9 +76,10 @@ function App() {
     });
   };
 
-  const addFood     = (item) => mutateDay(d => d.foods.push({ ...item, ts: Date.now() }));
-  const removeFood  = (i)    => mutateDay(d => d.foods.splice(i, 1));
-  const changeWater = (delta)=> mutateDay(d => { d.water = Math.max(0, (d.water || 0) + delta); });
+  const addFood      = (item) => mutateDay(d => d.foods.push({ ...item, ts: Date.now() }));
+  const removeFood   = (i)    => mutateDay(d => d.foods.splice(i, 1));
+  const changeWater  = (delta)=> mutateDay(d => { d.water = Math.max(0, (d.water || 0) + delta); });
+  const addWorkout   = (w)    => mutateDay(d => { d.workouts = [...(d.workouts || []), w]; });
 
   const smartMeal = () => {
     const h = new Date().getHours();
@@ -115,20 +116,21 @@ function App() {
   // ── main app ───────────────────────────────────────────
   return (
     <div style={{ height: '100%', position: 'relative', background: 'var(--bg)' }}>
-      {tab === 'home'    && <Home    user={user} day={day} onAddFood={m => setAddMeal(m)} onWater={changeWater} onRemoveFood={removeFood} onOpenProfile={() => setTab('profile')} />}
-      {tab === 'history' && <History user={user} logs={logs} />}
-      {tab === 'recipes' && <Recipes />}
-      {tab === 'profile' && <Profile user={user} logs={logs} onUpdate={updateUser} onReset={reset} />}
+      {tab === 'home'     && <Home     user={user} day={day} onAddFood={m => setAddMeal(m)} onWater={changeWater} onRemoveFood={removeFood} onOpenProfile={() => setTab('profile')} />}
+      {tab === 'history'  && <History  user={user} logs={logs} />}
+      {tab === 'workouts' && <Workouts user={user} logs={logs} onAddWorkout={addWorkout} onUpdate={updateUser} />}
+      {tab === 'recipes'  && <Recipes />}
+      {tab === 'profile'  && <Profile  user={user} logs={logs} onUpdate={updateUser} onReset={reset} />}
 
       {/* bottom nav */}
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 40, pointerEvents: 'none' }}>
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg) 55%, transparent)', height: 110, top: 'auto', bottom: 0 }} />
         <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '0 24px 30px', pointerEvents: 'auto' }}>
-          <NavBtn icon={Icon.home}  label="בית"      on={tab === 'home'}    onClick={() => setTab('home')} />
-          <NavBtn icon={Icon.chart} label="השבוע"    on={tab === 'history'} onClick={() => setTab('history')} />
+          <NavBtn icon={Icon.home}     label="בית"      on={tab === 'home'}     onClick={() => setTab('home')} />
+          <NavBtn icon={Icon.chart}    label="היסטוריה" on={tab === 'history'}  onClick={() => setTab('history')} />
           <AddBtn onClick={() => setAddMeal(smartMeal())} />
-          <NavBtn icon={Icon.book}  label="מתכונים"  on={tab === 'recipes'} onClick={() => setTab('recipes')} />
-          <NavBtn icon={Icon.user}  label="פרופיל"   on={tab === 'profile'} onClick={() => setTab('profile')} />
+          <NavBtn icon={Icon.dumbbell} label="אימונים"  on={tab === 'workouts'} onClick={() => setTab('workouts')} />
+          <NavBtn icon={Icon.user}     label="פרופיל"   on={tab === 'profile'}  onClick={() => setTab('profile')} />
         </div>
       </div>
 
@@ -163,19 +165,9 @@ function AddBtn({ onClick }) {
 }
 
 function Root() {
-  const isMobile = window.innerWidth <= 500;
-  if (isMobile) {
-    return (
-      <div style={{ width: '100%', height: '100dvh', overflow: 'hidden', background: 'var(--bg)' }}>
-        <App />
-      </div>
-    );
-  }
   return (
-    <div id="deviceWrap">
-      <IOSDevice>
-        <App />
-      </IOSDevice>
+    <div style={{ width: '100%', height: '100dvh', overflow: 'hidden', background: 'var(--bg)' }}>
+      <App />
     </div>
   );
 }

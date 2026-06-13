@@ -118,7 +118,7 @@ app.get('/api/logs/week', dbRequired, auth, async (req, res) => {
       const d = new Date(); d.setDate(d.getDate() - i);
       const date = d.toISOString().slice(0, 10);
       const row = await logsCol.findOne({ userId: req.user.id, date });
-      result[date] = row ? { foods: row.foods, water: row.water } : { foods: [], water: 0 };
+      result[date] = row ? { foods: row.foods, water: row.water, workouts: row.workouts || [] } : { foods: [], water: 0, workouts: [] };
     }
     res.json(result);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -127,16 +127,16 @@ app.get('/api/logs/week', dbRequired, auth, async (req, res) => {
 app.get('/api/logs/:date', dbRequired, auth, async (req, res) => {
   try {
     const row = await logsCol.findOne({ userId: req.user.id, date: req.params.date });
-    res.json(row ? { foods: row.foods, water: row.water } : { foods: [], water: 0 });
+    res.json(row ? { foods: row.foods, water: row.water, workouts: row.workouts || [] } : { foods: [], water: 0, workouts: [] });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.put('/api/logs/:date', dbRequired, auth, async (req, res) => {
   try {
-    const { foods = [], water = 0 } = req.body || {};
+    const { foods = [], water = 0, workouts = [] } = req.body || {};
     await logsCol.updateOne(
       { userId: req.user.id, date: req.params.date },
-      { $set: { foods, water, updatedAt: Date.now() } },
+      { $set: { foods, water, workouts, updatedAt: Date.now() } },
       { upsert: true }
     );
     res.json({ ok: true });
@@ -161,7 +161,7 @@ app.get('/api/food-search', auth, (req, res) => {
 // ── Meal recommendations ───────────────────────────────────
 app.post('/api/meal-recommendations', auth, async (req, res) => {
   try {
-    const { mealType, targets, remaining } = req.body || {};
+    const { mealType, targets, remaining, round = 0 } = req.body || {};
     if (!process.env.ANTHROPIC_API_KEY)
       return res.status(503).json({ error: 'מפתח AI לא מוגדר' });
 
@@ -179,6 +179,7 @@ app.post('/api/meal-recommendations', auth, async (req, res) => {
 - קלוריות שנותרו להיום: ${remaining || targets?.calories || 500} קק״ל
 - יעד חלבון יומי: ${targets?.protein || 50}ג׳
 - מטרה: ${goalDesc[targets?.goal] || 'שמירה על משקל'}
+${round > 0 ? `- בקשה מספר ${round + 1}: הצעי אפשרויות שונות לחלוטין מהפעמים הקודמות` : ''}
 
 החזר JSON בלבד (ללא טקסט נוסף):
 {"items":[{"name":"שם בעברית","desc":"תיאור קצר של המנה","kcal":מספר,"icon":"אמוגי"}]}`
@@ -190,6 +191,31 @@ app.post('/api/meal-recommendations', auth, async (req, res) => {
     if (fence) s = fence[1].trim();
     const start = s.indexOf('{'); const end = s.lastIndexOf('}');
     if (start >= 0 && end > start) s = s.slice(start, end + 1);
+    res.json(JSON.parse(s));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Recipe calorie estimate ───────────────────────────────
+app.post('/api/estimate-recipe-calories', auth, async (req, res) => {
+  try {
+    const { ingredients, mealName } = req.body || {};
+    if (!ingredients || !ingredients.length) return res.status(400).json({ error: 'חסרים מצרכים' });
+    if (!process.env.ANTHROPIC_API_KEY) return res.status(503).json({ error: 'מפתח AI לא מוגדר' });
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const list = ingredients.map(i => `${i.msr} ${i.ing}`.trim()).join('\n');
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 400,
+      messages: [{
+        role: 'user',
+        content: `אתה דיאטן מוסמך. העריכי קלוריות למתכון:\nמנה: ${mealName}\nמצרכים:\n${list}\n\nהחזר JSON בלבד:\n{"totalKcal":מספר,"servings":מספר,"perServing":מספר,"note":"משפט אחד בעברית"}`
+      }]
+    });
+    let s = (msg.content[0].text || '').trim();
+    const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fence) s = fence[1].trim();
+    const st = s.indexOf('{'), en = s.lastIndexOf('}');
+    if (st >= 0 && en > st) s = s.slice(st, en + 1);
     res.json(JSON.parse(s));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

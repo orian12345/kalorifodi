@@ -127,7 +127,10 @@ function WeightWidget({ user, logs, onUpdate }) {
   const saveWeight = () => {
     const w = parseFloat(newWeight);
     if (!w || w < 20 || w > 300) { setEditW(false); return; }
-    onUpdate({ ...user, weight: w, targets: KP.calcTargets({ ...user, weight: w }) });
+    const today = KP.TODAY();
+    const history = (user.weightHistory || []).filter(e => e.date !== today);
+    history.push({ date: today, weight: w });
+    onUpdate({ ...user, weight: w, targets: KP.calcTargets({ ...user, weight: w }), weightHistory: history });
     setEditW(false);
   };
 
@@ -248,7 +251,7 @@ function WeightWidget({ user, logs, onUpdate }) {
       {/* projection line chart */}
       {hasTarget && !reached && (
         <div style={{ marginTop: 16 }}>
-          <WeightChart currentWeight={user.weight} targetWeight={user.targetWeight} />
+          <WeightChart currentWeight={user.weight} targetWeight={user.targetWeight} weeksToGoal={weeksToGoal} kgPerWeek={kgPerWeek} />
         </div>
       )}
 
@@ -297,32 +300,47 @@ function ForecastCell({ label, kg }) {
   );
 }
 
-function WeightChart({ currentWeight, targetWeight }) {
-  const W = 280, H = 76;
-  const minW = Math.min(targetWeight, currentWeight) - 0.5;
-  const maxW = Math.max(targetWeight, currentWeight) + 0.5;
-  const toY  = w => H - 14 - ((w - minW) / Math.max(maxW - minW, 0.1)) * (H - 26);
-  const toX  = t => 18 + t * (W - 36);
+function WeightChart({ currentWeight, targetWeight, weeksToGoal, kgPerWeek }) {
+  const W = 280, H = 68;
+  const sx = 28, ex = W - 28, trackY = 22;
 
-  const pts   = [0, 0.25, 0.5, 0.75, 1].map(t => ({ x: toX(t), y: toY(currentWeight - (currentWeight - targetWeight) * t) }));
-  const pathD = pts.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`).join(' ');
-  const areaD = `${pathD} L ${toX(1)} ${H} L ${toX(0)} ${H} Z`;
+  const mids = weeksToGoal
+    ? [Math.round(weeksToGoal / 3), Math.round(weeksToGoal * 2 / 3)].map((w, i) => ({
+        x: sx + (ex - sx) * ((i + 1) / 3),
+        weeks: w,
+      }))
+    : [];
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
-      <defs>
-        <linearGradient id="wGrad2" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--green)" stopOpacity="0.18" />
-          <stop offset="100%" stopColor="var(--green)" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={areaD} fill="url(#wGrad2)" />
-      <path d={pathD} stroke="var(--green)" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={toX(0)} cy={toY(currentWeight)}  r="4.5" fill="var(--ink-soft)" />
-      <circle cx={toX(1)} cy={toY(targetWeight)}    r="5.5" fill="var(--green)" />
-      <circle cx={toX(1)} cy={toY(targetWeight)}    r="10"  fill="none" stroke="var(--green)" strokeWidth="1.5" opacity="0.3" />
-      <text x={toX(0) + 3}  y={toY(currentWeight)  - 8} fontSize="10" fill="var(--ink-soft)"  fontFamily="Rubik">{currentWeight}</text>
-      <text x={toX(1) - 3}  y={toY(targetWeight)   - 8} textAnchor="end" fontSize="10" fill="var(--green-deep)" fontFamily="Rubik" fontWeight="700">{targetWeight}</text>
+      {/* track */}
+      <line x1={sx} y1={trackY} x2={ex} y2={trackY} stroke="var(--track)" strokeWidth="4" strokeLinecap="round" />
+      <line x1={sx} y1={trackY} x2={ex} y2={trackY} stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round" opacity="0.45" strokeDasharray="6 5" />
+
+      {/* milestone ticks */}
+      {mids.map(({ x, weeks }) => (
+        <g key={weeks}>
+          <line x1={x} y1={trackY - 6} x2={x} y2={trackY + 6} stroke="var(--green-deep)" strokeWidth="1.5" opacity="0.35" />
+          <text x={x} y={trackY - 10} textAnchor="middle" fontSize="9" fill="var(--ink-soft)" fontFamily="Rubik">{`+${weeks}שב׳`}</text>
+        </g>
+      ))}
+
+      {/* start dot — היום */}
+      <circle cx={sx} cy={trackY} r="8" fill="var(--card)" stroke="var(--ink-soft)" strokeWidth="2" />
+      <circle cx={sx} cy={trackY} r="3.5" fill="var(--ink-soft)" />
+
+      {/* end dot — יעד */}
+      <circle cx={ex} cy={trackY} r="10" fill="var(--green-soft)" stroke="var(--green)" strokeWidth="2.5" />
+      <circle cx={ex} cy={trackY} r="4.5" fill="var(--green)" />
+
+      {/* bottom labels */}
+      <text x={sx} y={trackY + 18} textAnchor="middle" fontSize="10" fill="var(--ink-soft)" fontFamily="Rubik">היום</text>
+      <text x={sx} y={trackY + 30} textAnchor="middle" fontSize="11.5" fill="var(--ink)" fontFamily="Rubik" fontWeight="700">{currentWeight} ק״ג</text>
+
+      <text x={ex} y={trackY + 18} textAnchor="middle" fontSize="10" fill="var(--green-deep)" fontFamily="Rubik">
+        {weeksToGoal ? `~${weeksToGoal} שב׳` : 'יעד'}
+      </text>
+      <text x={ex} y={trackY + 30} textAnchor="middle" fontSize="11.5" fill="var(--green-deep)" fontFamily="Rubik" fontWeight="700">{targetWeight} ק״ג</text>
     </svg>
   );
 }
