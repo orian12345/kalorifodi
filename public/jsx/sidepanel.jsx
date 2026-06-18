@@ -34,6 +34,8 @@ const CUISINE_KCAL = {
   'mediterranean':500,'greek':520,'turkish':550,'middle_eastern':530,
   'french':620,'seafood':400,'coffee_shop':200,'cafe':200,'bakery':350,
   'sandwich':450,'vegan':380,'vegetarian':380,'steak':680,'barbecue':700,
+  'restaurant':550,'fast_food':700,'pub':500,'bar':400,
+  'ice_cream':300,'juice_bar':200,'food_court':600,
 };
 
 function cuisineLabel(raw) {
