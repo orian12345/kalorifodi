@@ -13,6 +13,7 @@ function Onboarding({ onComplete }) {
   const targets = KP.calcTargets(p);
   const next = () => setStep(s => s + 1);
   const back = () => setStep(s => s - 1);
+  const g = (f, m) => G(p.gender, f, m);
 
   const finish = () => {
     const user = { ...p, targets, createdAt: Date.now() };
@@ -34,7 +35,7 @@ function Onboarding({ onComplete }) {
           ))}
         </div>
         <div style={{ position: 'absolute', bottom: 46, left: 24, right: 24 }}>
-          <Btn onClick={next}>בואי נתחיל</Btn>
+          <Btn onClick={next}>בואו נתחיל</Btn>
         </div>
       </div>
     );
@@ -134,7 +135,7 @@ function Onboarding({ onComplete }) {
       );
     };
     return (
-      <Shell title="קצת נתונים עלייך" sub="הקלידי גיל, גובה ומשקל" canNext onNext={next}>
+      <Shell title="קצת נתונים עלייך" sub={g('הקלידי', 'הקלד') + ' גיל, גובה ומשקל'} canNext onNext={next}>
         <Metric label="גיל" k="age" min={14} max={90} unit="שנים" />
         <Metric label="גובה" k="height" min={130} max={210} unit='ס״מ' />
         <Metric label="משקל" k="weight" min={35} max={160} unit='ק״ג' />
@@ -145,7 +146,7 @@ function Onboarding({ onComplete }) {
   // step 4: activity
   if (step === 4) {
     return (
-      <Shell title="כמה את פעילה?" sub="רמת הפעילות היומיומית שלך" canNext onNext={next}>
+      <Shell title={g('כמה את פעילה?', 'כמה אתה פעיל?')} sub="רמת הפעילות היומיומית שלך" canNext onNext={next}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {KP.ACTIVITY.map(a => {
             const on = p.activity === a.id;
