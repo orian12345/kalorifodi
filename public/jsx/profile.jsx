@@ -58,6 +58,7 @@ function Profile({ user, logs, onUpdate, onReset }) {
 
         {!edit ? (
           <Card style={{ padding: '6px 4px' }}>
+            <Row label="מגדר"         value={user.gender === 'male' ? 'גבר 👨' : 'אישה 👩'} />
             <Row label="גיל"          value={`${user.age} שנים`} />
             <Row label="גובה"         value={`${user.height} ס״מ`} />
             <Row label="משקל נוכחי"   value={`${user.weight} ק״ג`} />
@@ -67,6 +68,11 @@ function Profile({ user, logs, onUpdate, onReset }) {
           </Card>
         ) : (
           <Card>
+            <div style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 500, margin: '4px 2px 10px' }}>מגדר</div>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+              <Chip on={p.gender !== 'male'} onClick={() => set('gender', 'female')}>אישה 👩</Chip>
+              <Chip on={p.gender === 'male'} onClick={() => set('gender', 'male')}>גבר 👨</Chip>
+            </div>
             <EditMetric label="גיל"         k="age"          min={14}  max={90}  unit="שנים" p={p} set={set} />
             <EditMetric label="גובה"        k="height"       min={130} max={210} unit='ס״מ'  p={p} set={set} />
             <EditMetric label="משקל נוכחי" k="weight"       min={35}  max={200} unit='ק״ג'  p={p} set={set} />
