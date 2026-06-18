@@ -172,6 +172,7 @@ const MEAL_TYPES = [
 ];
 
 function MealRecommendations({ user, remaining }) {
+  const g = (f, m) => G(user.gender, f, m);
   const [recs, setRecs]       = React.useState(null);
   const [loading, setLoading] = React.useState(false);
   const [errMsg, setErrMsg]   = React.useState('');
@@ -249,7 +250,7 @@ function MealRecommendations({ user, remaining }) {
         {recs && !loading && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {recs.length === 0 ? (
-              <div style={{ textAlign: 'center', fontSize: 13.5, color: 'var(--ink-soft)', padding: '8px 0' }}>לא התקבלו המלצות, נסי שוב</div>
+              <div style={{ textAlign: 'center', fontSize: 13.5, color: 'var(--ink-soft)', padding: '8px 0' }}>לא התקבלו המלצות, {g('נסי', 'נסה')} שוב</div>
             ) : recs.map((rec, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg)', borderRadius: 14, padding: '12px 14px' }}>
                 <span style={{ fontSize: 26, flexShrink: 0 }}>{rec.icon || '🍽️'}</span>

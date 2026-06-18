@@ -72,14 +72,14 @@ function CameraTab({ onPick, onAdd, defaultMeal, onClose }) {
 
       if (!data.hasFood) {
         setStatus('error');
-        setErr('🙅 לא זוהה מזון בתמונה. נסי לצלם צלחת או מאכל ספציפי.');
+        setErr('🙅 לא זוהה מזון בתמונה. נסה/י לצלם צלחת או מאכל ספציפי.');
         return;
       }
 
       const parsed = (data.items || []).filter(it => it.kcal > 0);
       if (parsed.length === 0) {
         setStatus('error');
-        setErr('לא הצלחנו לזהות פריטים. נסי תמונה ברורה יותר.');
+        setErr('לא הצלחנו לזהות פריטים. נסה/י תמונה ברורה יותר.');
         return;
       }
 

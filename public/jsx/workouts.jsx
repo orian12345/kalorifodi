@@ -16,6 +16,7 @@ const WORKOUT_TYPES = [
 ];
 
 function Workouts({ user, logs, onAddWorkout }) {
+  const g = (f, m) => G(user.gender, f, m);
   const [showAdd, setShowAdd] = React.useState(false);
   const today = KP.TODAY();
   const keys  = KP.weekKeys();
@@ -49,7 +50,7 @@ function Workouts({ user, logs, onAddWorkout }) {
       {/* add button */}
       <div style={{ padding: '14px 18px 0' }}>
         <button onClick={() => setShowAdd(true)} style={{ width: '100%', border: 'none', cursor: 'pointer', background: 'var(--green)', borderRadius: 18, padding: '16px', fontSize: 16, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, boxShadow: '0 8px 20px -6px var(--green-shadow)' }}>
-          <Icon.dumbbell s={22} c="#fff" /> הוסיפי אימון
+          <Icon.dumbbell s={22} c="#fff" /> {g('הוסיפי', 'הוסף')} אימון
         </button>
       </div>
 
@@ -88,7 +89,7 @@ function Workouts({ user, logs, onAddWorkout }) {
             <WeightHistoryChart history={weightHistory} targetWeight={user.targetWeight} />
           ) : (
             <div style={{ textAlign: 'center', padding: '20px 0', fontSize: 13.5, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
-              עדכני את המשקל שלך בפרופיל<br />
+              {g('עדכני', 'עדכן')} את המשקל שלך בפרופיל<br />
               <span style={{ fontSize: 12 }}>הגרף יופיע אחרי 2 מדידות</span>
             </div>
           )}
@@ -118,6 +119,7 @@ function Workouts({ user, logs, onAddWorkout }) {
 
       {showAdd && (
         <AddWorkoutModal
+          user={user}
           onClose={() => setShowAdd(false)}
           onAdd={w => { onAddWorkout(w); setShowAdd(false); }}
         />
@@ -126,7 +128,8 @@ function Workouts({ user, logs, onAddWorkout }) {
   );
 }
 
-function AddWorkoutModal({ onClose, onAdd }) {
+function AddWorkoutModal({ user, onClose, onAdd }) {
+  const g = (f, m) => G(user?.gender, f, m);
   const [type, setType]         = React.useState('gym');
   const [duration, setDuration] = React.useState('45');
 
@@ -134,7 +137,7 @@ function AddWorkoutModal({ onClose, onAdd }) {
     <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 50, display: 'flex', alignItems: 'flex-end' }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--card)', borderRadius: '24px 24px 0 0', padding: '24px 22px 44px', width: '100%', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--ink)', margin: 0 }}>הוסיפי אימון</h2>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--ink)', margin: 0 }}>{g('הוסיפי', 'הוסף')} אימון</h2>
           <button onClick={onClose} style={{ border: 'none', background: 'var(--bg)', borderRadius: 10, width: 34, height: 34, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Icon.close s={18} c="var(--ink-soft)" />
           </button>

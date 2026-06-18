@@ -98,6 +98,7 @@ function Profile({ user, logs, onUpdate, onReset }) {
 
 // ── Weight widget ───────────────────────────────────────────
 function WeightWidget({ user, logs, onUpdate }) {
+  const g = (f, m) => G(user.gender, f, m);
   const [editW, setEditW]         = React.useState(false);
   const [newWeight, setNewWeight] = React.useState(String(user.weight));
   const [editT, setEditT]         = React.useState(false);
@@ -169,7 +170,7 @@ function WeightWidget({ user, logs, onUpdate }) {
           ) : (
             <button onClick={() => { setNewWeight(String(user.weight)); setEditW(true); }}
               style={{ border: 'none', background: 'var(--green-soft)', borderRadius: 9, padding: '4px 14px', fontSize: 12, color: 'var(--green-deep)', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)', marginTop: 7 }}>
-              עדכני
+              {g('עדכני', 'עדכן')}
             </button>
           )}
         </div>
@@ -241,7 +242,7 @@ function WeightWidget({ user, logs, onUpdate }) {
             ) : (
               <button onClick={() => { setNewTarget(''); setEditT(true); }}
                 style={{ border: 'none', background: 'var(--green-soft)', borderRadius: 14, padding: '12px 16px', fontSize: 13, color: 'var(--green-deep)', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)', lineHeight: 1.4, width: '100%' }}>
-                ＋ הגדרי יעד
+                ＋ {g('הגדרי', 'הגדר')} יעד
               </button>
             )}
           </div>
@@ -280,7 +281,7 @@ function WeightWidget({ user, logs, onUpdate }) {
         </div>
       ) : (
         <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--line)', fontSize: 12.5, color: 'var(--ink-soft)', textAlign: 'center' }}>
-          הוסיפי מזון לפחות יום אחד כדי לראות תחזית
+          {g('הוסיפי', 'הוסף')} מזון לפחות יום אחד כדי לראות תחזית
         </div>
       )}
     </Card>

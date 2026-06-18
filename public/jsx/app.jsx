@@ -134,7 +134,7 @@ function App() {
         </div>
       </div>
 
-      {addMeal && <AddFood defaultMeal={addMeal} onClose={() => setAddMeal(null)} onAdd={addFood} />}
+      {addMeal && <AddFood user={user} defaultMeal={addMeal} onClose={() => setAddMeal(null)} onAdd={addFood} />}
     </div>
   );
 }

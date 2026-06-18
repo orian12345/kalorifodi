@@ -1,7 +1,8 @@
 /* ============================================================
    קלוריפודי — Add food sheet (camera+AI / search / manual)
    ============================================================ */
-function AddFood({ defaultMeal, onClose, onAdd }) {
+function AddFood({ user, defaultMeal, onClose, onAdd }) {
+  const g = (f, m) => G(user?.gender, f, m);
   const [tab, setTab] = React.useState('search');
   const [confirm, setConfirm] = React.useState(null);
 
@@ -44,7 +45,7 @@ function AddFood({ defaultMeal, onClose, onAdd }) {
 
         {/* body */}
         <div style={{ flex: 1, overflow: 'auto', padding: '16px 20px 28px' }}>
-          {tab === 'search' && <SearchTab onPick={setConfirm} />}
+          {tab === 'search' && <SearchTab gender={user?.gender} onPick={setConfirm} />}
           {tab === 'manual' && <ManualTab onPick={setConfirm} />}
         </div>
       </div>
@@ -57,7 +58,8 @@ function AddFood({ defaultMeal, onClose, onAdd }) {
 }
 
 // ---------- SEARCH ----------
-function SearchTab({ onPick }) {
+function SearchTab({ gender, onPick }) {
+  const g = (f, m) => G(gender, f, m);
   const [q, setQ] = React.useState('');
   const [online, setOnline]   = React.useState([]);
   const [loading, setLoading] = React.useState(false);
@@ -131,7 +133,7 @@ function SearchTab({ onPick }) {
 
       {!hasQuery && (
         <div style={{ textAlign: 'center', color: 'var(--ink-soft)', padding: '40px 0 20px', fontSize: 14 }}>
-          🔍 הקלידי שם מאכל לחיפוש
+          🔍 {g('הקלידי', 'הקלד')} שם מאכל לחיפוש
         </div>
       )}
 
@@ -174,7 +176,7 @@ function SearchTab({ onPick }) {
         {/* ── מצב ריק ── */}
         {hasQuery && !loading && localList.length === 0 && online.length === 0 && (
           <div style={{ textAlign: 'center', color: 'var(--ink-soft)', padding: '30px 0', fontSize: 14 }}>
-            לא נמצא מאכל — נסי להוסיף ידנית
+            לא נמצא מאכל — {g('נסי', 'נסה')} להוסיף ידנית
           </div>
         )}
       </div>

@@ -101,4 +101,7 @@ function Card({ children, style = {}, onClick }) {
   );
 }
 
-Object.assign(window, { Ring, MacroBar, Icon, Btn, Card });
+// Gender-aware text helper: G(user.gender, 'נקבה', 'זכר')
+function G(gender, fem, masc) { return gender === 'male' ? masc : fem; }
+
+Object.assign(window, { Ring, MacroBar, Icon, Btn, Card, G });
