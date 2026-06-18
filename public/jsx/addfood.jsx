@@ -249,5 +249,106 @@ function ManualTab({ onPick }) {
 const searchRow = { display: 'flex', alignItems: 'center', gap: 12, width: '100%', border: 'none', background: 'var(--card)', borderRadius: 16, padding: '10px 12px', cursor: 'pointer' };
 const manualLbl = { display: 'block', fontSize: 13, color: 'var(--ink-soft)', fontWeight: 500, marginBottom: 6, marginInlineStart: 2 };
 const manualInput = { width: '100%', boxSizing: 'border-box', border: 'none', background: 'var(--card)', borderRadius: 14, padding: '14px 16px', fontSize: 16, fontFamily: 'var(--font-body)', color: 'var(--ink)', outline: 'none' };
+const stepBtn = { border: 'none', cursor: 'pointer', width: 36, height: 36, borderRadius: 12, background: 'var(--green-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+const unitToggleBtn = (on) => ({
+  flex: 1, border: 'none', cursor: 'pointer', borderRadius: 14, padding: '10px 0',
+  background: on ? 'var(--green)' : 'var(--card)', color: on ? '#fff' : 'var(--ink-soft)',
+  fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-body)', transition: 'all .2s',
+});
+
+function FoodConfirm({ base, defaultMeal, onCancel, onConfirm }) {
+  const servingGrams = base.grams || null;
+  const servingLabel = (base.serving || '').trim();
+  const hasUnitOption = !!servingGrams && !/ג[׳']?$/.test(servingLabel);
+
+  const [unit, setUnit] = React.useState(servingGrams ? 'grams' : 'serving');
+  const [grams, setGrams] = React.useState(servingGrams || 100);
+  const [qty, setQty] = React.useState(1);
+  const [meal, setMeal] = React.useState(defaultMeal || 'breakfast');
+
+  const ratio = unit === 'serving' ? qty : (servingGrams ? grams / servingGrams : qty);
+  const k  = Math.round(base.kcal * ratio);
+  const kp = Math.round(base.p * ratio);
+  const kc = Math.round(base.c * ratio);
+  const kf = Math.round(base.f * ratio);
+
+  const stepGrams = (d) => setGrams(g => Math.max(5, g + d));
+  const stepQty   = (d) => setQty(q => Math.max(0.5, Math.round((q + d) * 2) / 2));
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, zIndex: 120, display: 'flex', flexDirection: 'column' }}>
+      <div onClick={onCancel} style={{ position: 'absolute', inset: 0, background: 'rgba(60,40,35,.4)' }} />
+      <div style={{ marginTop: 'auto', position: 'relative', background: 'var(--bg)', borderRadius: '28px 28px 0 0', padding: '22px 22px 38px', boxShadow: '0 -10px 40px rgba(0,0,0,.25)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 13, marginBottom: 20 }}>
+          <div style={{ width: 52, height: 52, borderRadius: 16, background: 'var(--card)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>{base.icon || '🍽️'}</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--ink)' }}>{base.name}</div>
+            <div style={{ fontSize: 13.5, color: 'var(--ink-soft)' }}>{base.serving}{servingGrams ? ` · מנה ${servingGrams}ג׳` : ''}</div>
+          </div>
+        </div>
+
+        {hasUnitOption && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+            <button onClick={() => setUnit('grams')} style={unitToggleBtn(unit === 'grams')}>גרמים</button>
+            <button onClick={() => setUnit('serving')} style={unitToggleBtn(unit === 'serving')}>{servingLabel || 'יחידות'}</button>
+          </div>
+        )}
+
+        {unit === 'grams' && servingGrams ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--card)', borderRadius: 18, padding: '12px 16px', marginBottom: 14 }}>
+            <span style={{ fontSize: 15.5, color: 'var(--ink)', fontWeight: 500 }}>כמות בגרמים</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <button onClick={() => stepGrams(-10)} style={stepBtn}><Icon.minus s={20} c="var(--green-deep)" /></button>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--ink)', minWidth: 52, textAlign: 'center' }}>{grams}ג׳</span>
+              <button onClick={() => stepGrams(10)} style={stepBtn}><Icon.plus s={20} c="var(--green-deep)" /></button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, background: 'var(--card)', borderRadius: 18, padding: '12px 16px', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 15.5, color: 'var(--ink)', fontWeight: 500 }}>{servingGrams ? `כמות ${servingLabel || 'יחידות'}` : 'כמות מנות'}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <button onClick={() => stepQty(-0.5)} style={stepBtn}><Icon.minus s={20} c="var(--green-deep)" /></button>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--ink)', minWidth: 36, textAlign: 'center' }}>{qty}</span>
+                <button onClick={() => stepQty(0.5)} style={stepBtn}><Icon.plus s={20} c="var(--green-deep)" /></button>
+              </div>
+            </div>
+            {servingGrams && (
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)', textAlign: 'end' }}>≈ {Math.round(qty * servingGrams)}ג׳</div>
+            )}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 7, marginBottom: 16 }}>
+          {KP.MEALS.map(m => {
+            const on = meal === m.id;
+            return (
+              <button key={m.id} onClick={() => setMeal(m.id)} style={{
+                flex: 1, border: 'none', cursor: 'pointer', borderRadius: 14, padding: '10px 0',
+                background: on ? 'var(--green)' : 'var(--card)', color: on ? '#fff' : 'var(--ink-soft)',
+                fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-body)', transition: 'all .2s',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+              }}>
+                <span style={{ fontSize: 17 }}>{m.icon}</span>{m.label.replace('ארוחת ', '')}
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
+          {[['קלוריות', k, 'var(--green)'], ['חלבון', kp + 'ג׳', 'var(--pink)'], ['פחמ׳', kc + 'ג׳', 'var(--carb)'], ['שומן', kf + 'ג׳', 'var(--fat)']].map(([l, v, c]) => (
+            <div key={l} style={{ flex: 1, background: 'var(--card)', borderRadius: 14, padding: '10px 4px', textAlign: 'center' }}>
+              <div style={{ width: 8, height: 8, borderRadius: 3, background: c, margin: '0 auto 5px' }} />
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 17, color: 'var(--ink)' }}>{v}</div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{l}</div>
+            </div>
+          ))}
+        </div>
+
+        <Btn onClick={() => onConfirm({ name: base.name, icon: base.icon || '🍽️', serving: base.serving, kcal: base.kcal, p: base.p, c: base.c, f: base.f, qty: ratio, meal })}>הוספה ליומן</Btn>
+      </div>
+    </div>
+  );
+}
 
 Object.assign(window, { AddFood });
