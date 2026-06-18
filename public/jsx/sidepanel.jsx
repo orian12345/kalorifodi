@@ -92,7 +92,7 @@ function SidePanel({ user, onClose, onOpenRecipes }) {
             .sort((a, b) => a.dist - b.dist);
           setRestaurants(sorted);
           setLocState('done');
-        } catch (e) { setLocErr('לא הצלחנו למצוא מסעדות קרובות'); setLocState('error'); }
+        } catch (e) { setLocErr('לא הצלחנו למצוא מסעדות קרובות' + (e.message ? ': ' + e.message : '')); setLocState('error'); }
       },
       () => { setLocErr('לא ניתן לגשת למיקום. אפשרי גישה בהגדרות הדפדפן.'); setLocState('error'); }
     );

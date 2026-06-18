@@ -235,41 +235,51 @@ app.get('/api/nearby-restaurants', auth, async (req, res) => {
   const { lat, lng, meal } = req.query;
   if (!lat || !lng) return res.status(400).json({ error: 'חסרים קואורדינטות' });
 
-  const amenity = meal === 'breakfast'
-    ? '["amenity"~"cafe|bakery|restaurant"]'
-    : '["amenity"~"restaurant|fast_food"]';
+  const types = meal === 'breakfast'
+    ? ['cafe', 'bakery', 'restaurant']
+    : ['restaurant', 'fast_food'];
 
-  const query = `[out:json][timeout:15];node${amenity}(around:1500,${lat},${lng});out 25;`;
+  const nodeLines = types.map(t => `  node["amenity"="${t}"](around:2500,${lat},${lng});`).join('\n');
+  const query = `[out:json][timeout:25];\n(\n${nodeLines}\n);\nout 30;`;
+
+  const tryFetch = async (url) => {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'KaloriFodi/1.0' },
+      body: 'data=' + encodeURIComponent(query),
+      signal: AbortSignal.timeout(22000),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  };
 
   try {
-    const raw = await new Promise((resolve, reject) => {
-      const body = 'data=' + encodeURIComponent(query);
-      const options = {
-        hostname: 'overpass-api.de', path: '/api/interpreter',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(body) },
-      };
-      const req2 = https.request(options, r => {
-        let d = '';
-        r.on('data', c => d += c);
-        r.on('end', () => resolve(d));
-      });
-      req2.on('error', reject);
-      req2.write(body);
-      req2.end();
-    });
-    const data = JSON.parse(raw);
+    let data;
+    try {
+      data = await tryFetch('https://overpass-api.de/api/interpreter');
+    } catch (e1) {
+      console.log('Overpass primary failed:', e1.message, '— trying mirror');
+      data = await tryFetch('https://overpass.kumi.systems/api/interpreter');
+    }
+
+    const seen = new Set();
     const restaurants = (data.elements || [])
       .filter(e => e.tags?.name)
       .map(e => ({
         name: e.tags.name,
-        cuisine: e.tags.cuisine || '',
+        cuisine: e.tags.cuisine || e.tags.amenity || '',
         website: e.tags.website || e.tags['contact:website'] || '',
         lat: e.lat, lng: e.lon,
       }))
-      .slice(0, 15);
+      .filter(r => { if (seen.has(r.name)) return false; seen.add(r.name); return true; })
+      .slice(0, 20);
+
+    console.log(`Nearby restaurants: found ${restaurants.length} results near ${lat},${lng}`);
     res.json({ restaurants });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    console.error('Nearby restaurants error:', e.message);
+    res.status(500).json({ error: 'שגיאה בחיפוש מסעדות: ' + e.message });
+  }
 });
 
 // ── Admin routes ───────────────────────────────────────────
