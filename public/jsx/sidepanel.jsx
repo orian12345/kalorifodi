@@ -50,6 +50,32 @@ function cuisineKcal(raw) {
   return CUISINE_KCAL[first] || null;
 }
 
+function WoltBtn({ name, lat, lng }) {
+  const [busy, setBusy] = React.useState(false);
+  const open = async () => {
+    setBusy(true);
+    try {
+      const r = await fetch(
+        `/api/wolt-link?name=${encodeURIComponent(name)}&lat=${lat}&lng=${lng}`,
+        { headers: { Authorization: 'Bearer ' + API.token() } }
+      );
+      const d = await r.json();
+      window.open(d.url, '_blank', 'noopener,noreferrer');
+    } catch {
+      window.open(`https://wolt.com/he/isr?q=${encodeURIComponent(name)}`, '_blank', 'noopener,noreferrer');
+    }
+    setBusy(false);
+  };
+  return (
+    <button onClick={open} disabled={busy} style={{
+      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+      border: 'none', borderRadius: 12, padding: '9px 0',
+      background: busy ? '#ccc' : '#009DE0', color: '#fff',
+      fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-body)', cursor: busy ? 'default' : 'pointer',
+    }}>{busy ? '⏳' : '🛵'} Wolt</button>
+  );
+}
+
 function distanceM(lat1, lng1, lat2, lng2) {
   const R = 6371000;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -216,7 +242,6 @@ function SidePanel({ user, onClose, onOpenRecipes }) {
                 const kcalVal = cuisineKcal(re.cuisine);
                 const cuisLabel = cuisineLabel(re.cuisine);
                 const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${re.lat},${re.lng}`;
-                const woltUrl = `https://wolt.com/he/isr?q=${encodeURIComponent(re.name)}`;
                 return (
                   <div key={i} style={{ background: 'var(--card)', borderRadius: 18, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
@@ -245,11 +270,7 @@ function SidePanel({ user, onClose, onOpenRecipes }) {
                         border: 'none', borderRadius: 12, padding: '9px 0', textDecoration: 'none',
                         background: 'var(--bg)', color: 'var(--ink)', fontSize: 13, fontWeight: 600,
                       }}>🗺️ ניווט</a>
-                      <a href={woltUrl} target="_blank" rel="noopener noreferrer" style={{
-                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                        border: 'none', borderRadius: 12, padding: '9px 0', textDecoration: 'none',
-                        background: '#009DE0', color: '#fff', fontSize: 13, fontWeight: 600,
-                      }}>🛵 Wolt</a>
+                      <WoltBtn name={re.name} lat={re.lat} lng={re.lng} />
                       {re.website && (
                         <a href={re.website.startsWith('http') ? re.website : 'https://' + re.website}
                           target="_blank" rel="noopener noreferrer" style={{

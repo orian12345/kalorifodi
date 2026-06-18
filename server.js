@@ -282,6 +282,49 @@ app.get('/api/nearby-restaurants', auth, async (req, res) => {
   }
 });
 
+// ── Wolt direct link lookup ────────────────────────────────
+app.get('/api/wolt-link', auth, async (req, res) => {
+  const { name, lat, lng } = req.query;
+  const fallback = `https://wolt.com/he/isr?q=${encodeURIComponent(name || '')}`;
+  if (!name || !lat || !lng) return res.json({ url: fallback });
+
+  try {
+    const r = await fetch(
+      `https://restaurant-api.wolt.com/v1/pages/restaurants?lat=${lat}&lon=${lng}&q=${encodeURIComponent(name)}`,
+      {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+          'Accept': 'application/json, text/plain, */*',
+          'Accept-Language': 'he-IL,he;q=0.9',
+          'w-wolt-session-id': 'kalorifodi',
+        },
+        signal: AbortSignal.timeout(6000),
+      }
+    );
+    if (!r.ok) return res.json({ url: fallback });
+    const data = await r.json();
+
+    // Walk sections → items → venue to find first result with a slug
+    for (const sec of (data.sections || [])) {
+      for (const item of (sec.items || [])) {
+        const v = item.venue || item;
+        const slug = v.slug;
+        if (!slug) continue;
+        const cityRaw = v.city?.name || v.city_slug || v.city || '';
+        const city = String(cityRaw).toLowerCase().replace(/\s+/g, '-');
+        const url = city
+          ? `https://wolt.com/he/isr/${city}/restaurant/${slug}`
+          : `https://wolt.com/he/isr?q=${encodeURIComponent(name)}`;
+        console.log('Wolt direct link:', url);
+        return res.json({ url });
+      }
+    }
+  } catch (e) {
+    console.log('Wolt link lookup failed:', e.message);
+  }
+  res.json({ url: fallback });
+});
+
 // ── Admin routes ───────────────────────────────────────────
 app.post('/api/admin/login', (req, res) => {
   if ((req.body || {}).password !== ADMIN_PASS)
