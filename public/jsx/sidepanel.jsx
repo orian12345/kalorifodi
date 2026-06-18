@@ -24,6 +24,8 @@ const CUISINE_HE = {
   'french':'צרפתי','seafood':'פירות ים','coffee_shop':'בית קפה',
   'cafe':'בית קפה','bakery':'מאפייה','sandwich':'סנדוויצ׳','vegan':'טבעוני',
   'vegetarian':'צמחוני','steak':'סטייק','barbecue':'ברביקיו',
+  'restaurant':'מסעדה','fast_food':'מזון מהיר','pub':'פאב','bar':'בר',
+  'ice_cream':'גלידה','juice_bar':'בר מיצים','food_court':'פוד קורט',
 };
 
 const CUISINE_KCAL = {
