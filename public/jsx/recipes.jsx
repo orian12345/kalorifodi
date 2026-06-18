@@ -1,6 +1,13 @@
 /* ============================================================
    קלוריפודי — Recipes browser (TheMealDB)
    ============================================================ */
+const CATEGORY_HE = {
+  'Beef':'בקר','Chicken':'עוף','Seafood':'פירות ים','Lamb':'כבש',
+  'Pork':'חזיר','Pasta':'פסטה','Dessert':'קינוח','Breakfast':'ארוחת בוקר',
+  'Vegetarian':'צמחוני','Vegan':'טבעוני','Side':'תוספת','Starter':'מנה ראשונה',
+  'Goat':'עז','Miscellaneous':'שונות','Salad':'סלט',
+};
+
 const RECIPE_CATS = [
   { id: 'Chicken',    label: 'עוף',        emoji: '🍗' },
   { id: 'Beef',       label: 'בקר',         emoji: '🥩' },
@@ -16,7 +23,7 @@ const RECIPE_CATS = [
   { id: 'Pork',       label: 'חזיר',        emoji: '🥓' },
 ];
 
-function Recipes() {
+function Recipes({ initialCategory }) {
   const [view, setView]       = React.useState('categories');
   const [category, setCategory] = React.useState(null);
   const [meals, setMeals]     = React.useState([]);
@@ -26,6 +33,13 @@ function Recipes() {
   const [searchRes, setSearchRes] = React.useState(null);
   const [calories, setCalories]   = React.useState(null);
   const [calLoading, setCalLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!initialCategory) return;
+    const known = RECIPE_CATS.find(c => c.id === initialCategory);
+    const cat = known || { id: initialCategory, label: (CATEGORY_HE[initialCategory] || initialCategory), emoji: '🍽️' };
+    loadMeals(cat);
+  }, [initialCategory]);
 
   const loadMeals = async (cat) => {
     setCategory(cat);

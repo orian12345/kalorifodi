@@ -10,6 +10,7 @@ function App() {
   const [tab,  setTab]    = React.useState('home');
   const [addMeal, setAddMeal] = React.useState(null);
   const [showPanel, setShowPanel] = React.useState(false);
+  const [recipeCategory, setRecipeCategory] = React.useState(null);
 
   const today = KP.TODAY();
 
@@ -120,7 +121,7 @@ function App() {
       {tab === 'home'     && <Home     user={user} day={day} onAddFood={m => setAddMeal(m)} onWater={changeWater} onRemoveFood={removeFood} onOpenProfile={() => setTab('profile')} />}
       {tab === 'history'  && <History  user={user} logs={logs} />}
       {tab === 'workouts' && <Workouts user={user} logs={logs} onAddWorkout={addWorkout} onUpdate={updateUser} />}
-      {tab === 'recipes'  && <Recipes />}
+      {tab === 'recipes'  && <Recipes initialCategory={recipeCategory} />}
       {tab === 'profile'  && <Profile  user={user} logs={logs} onUpdate={updateUser} onReset={reset} />}
 
       {/* bottom nav */}
@@ -152,7 +153,7 @@ function App() {
         <SidePanel
           user={user}
           onClose={() => setShowPanel(false)}
-          onOpenRecipes={(category) => { setTab('recipes'); setShowPanel(false); }}
+          onOpenRecipes={(category) => { setRecipeCategory(category); setTab('recipes'); setShowPanel(false); }}
         />
       )}
     </div>
