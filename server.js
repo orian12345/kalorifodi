@@ -230,6 +230,48 @@ app.post('/api/estimate-recipe-calories', auth, async (req, res) => {
 });
 
 
+// ── Nearby restaurants (OpenStreetMap Overpass) ───────────
+app.get('/api/nearby-restaurants', auth, async (req, res) => {
+  const { lat, lng, meal } = req.query;
+  if (!lat || !lng) return res.status(400).json({ error: 'חסרים קואורדינטות' });
+
+  const amenity = meal === 'breakfast'
+    ? '["amenity"~"cafe|bakery|restaurant"]'
+    : '["amenity"~"restaurant|fast_food"]';
+
+  const query = `[out:json][timeout:15];node${amenity}(around:1500,${lat},${lng});out 25;`;
+
+  try {
+    const raw = await new Promise((resolve, reject) => {
+      const body = 'data=' + encodeURIComponent(query);
+      const options = {
+        hostname: 'overpass-api.de', path: '/api/interpreter',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(body) },
+      };
+      const req2 = https.request(options, r => {
+        let d = '';
+        r.on('data', c => d += c);
+        r.on('end', () => resolve(d));
+      });
+      req2.on('error', reject);
+      req2.write(body);
+      req2.end();
+    });
+    const data = JSON.parse(raw);
+    const restaurants = (data.elements || [])
+      .filter(e => e.tags?.name)
+      .map(e => ({
+        name: e.tags.name,
+        cuisine: e.tags.cuisine || '',
+        website: e.tags.website || e.tags['contact:website'] || '',
+        lat: e.lat, lng: e.lon,
+      }))
+      .slice(0, 15);
+    res.json({ restaurants });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── Admin routes ───────────────────────────────────────────
 app.post('/api/admin/login', (req, res) => {
   if ((req.body || {}).password !== ADMIN_PASS)

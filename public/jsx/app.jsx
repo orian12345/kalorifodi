@@ -9,6 +9,7 @@ function App() {
   const [logs, setLogs]   = React.useState({});
   const [tab,  setTab]    = React.useState('home');
   const [addMeal, setAddMeal] = React.useState(null);
+  const [showPanel, setShowPanel] = React.useState(false);
 
   const today = KP.TODAY();
 
@@ -135,6 +136,25 @@ function App() {
       </div>
 
       {addMeal && <AddFood user={user} defaultMeal={addMeal} onClose={() => setAddMeal(null)} onAdd={addFood} />}
+
+      {/* hamburger button */}
+      <button onClick={() => setShowPanel(true)} style={{
+        position: 'absolute', top: 16, left: 16, zIndex: 30,
+        border: 'none', cursor: 'pointer', width: 40, height: 40, borderRadius: 14,
+        background: 'var(--card)', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 5,
+        boxShadow: '0 2px 10px rgba(0,0,0,.08)',
+      }}>
+        {[0,1,2].map(i => <div key={i} style={{ width: 18, height: 2, borderRadius: 2, background: 'var(--ink-soft)' }} />)}
+      </button>
+
+      {showPanel && (
+        <SidePanel
+          user={user}
+          onClose={() => setShowPanel(false)}
+          onOpenRecipes={(category) => { setTab('recipes'); setShowPanel(false); }}
+        />
+      )}
     </div>
   );
 }
