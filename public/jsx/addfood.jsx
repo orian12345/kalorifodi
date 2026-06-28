@@ -261,8 +261,9 @@ function FoodConfirm({ base, defaultMeal, onCancel, onConfirm }) {
   const servingGrams = base.grams || null;
   const servingLabel = (base.serving || '').trim();
   const hasUnitOption = !!servingGrams && !/ג[׳']?$/.test(servingLabel);
-  const altUnits = hasUnitOption ? (base.units || []).filter(u => u.grams && u.label) : [];
+  const altUnits = servingGrams ? (base.units || []).filter(u => u.grams && u.label) : [];
   const multiUnit = altUnits.length > 0;
+  const showUnitRow = hasUnitOption || multiUnit;
 
   const [unit, setUnit] = React.useState(servingGrams ? 'grams' : 'serving');
   const [grams, setGrams] = React.useState(servingGrams || 100);
@@ -295,10 +296,12 @@ function FoodConfirm({ base, defaultMeal, onCancel, onConfirm }) {
           </div>
         </div>
 
-        {hasUnitOption && (
+        {showUnitRow && (
           <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: multiUnit ? 'wrap' : 'nowrap' }}>
             <button onClick={() => setUnit('grams')} style={unitToggleBtn(unit === 'grams', !multiUnit)}>גרמים</button>
-            <button onClick={() => setUnit('serving')} style={unitToggleBtn(unit === 'serving', !multiUnit)}>{servingLabel || 'יחידות'}</button>
+            {hasUnitOption && (
+              <button onClick={() => setUnit('serving')} style={unitToggleBtn(unit === 'serving', !multiUnit)}>{servingLabel || 'יחידות'}</button>
+            )}
             {altUnits.map(u => (
               <button key={u.label} onClick={() => setUnit(u.label)} style={unitToggleBtn(unit === u.label, !multiUnit)}>{u.label}</button>
             ))}
