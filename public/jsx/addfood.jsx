@@ -250,8 +250,9 @@ const searchRow = { display: 'flex', alignItems: 'center', gap: 12, width: '100%
 const manualLbl = { display: 'block', fontSize: 13, color: 'var(--ink-soft)', fontWeight: 500, marginBottom: 6, marginInlineStart: 2 };
 const manualInput = { width: '100%', boxSizing: 'border-box', border: 'none', background: 'var(--card)', borderRadius: 14, padding: '14px 16px', fontSize: 16, fontFamily: 'var(--font-body)', color: 'var(--ink)', outline: 'none' };
 const stepBtn = { border: 'none', cursor: 'pointer', width: 36, height: 36, borderRadius: 12, background: 'var(--green-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' };
-const unitToggleBtn = (on) => ({
-  flex: 1, border: 'none', cursor: 'pointer', borderRadius: 14, padding: '10px 0',
+const unitToggleBtn = (on, full = true) => ({
+  flex: full ? 1 : '0 0 auto', border: 'none', cursor: 'pointer', borderRadius: 14,
+  padding: full ? '10px 0' : '10px 16px',
   background: on ? 'var(--green)' : 'var(--card)', color: on ? '#fff' : 'var(--ink-soft)',
   fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-body)', transition: 'all .2s',
 });
@@ -260,13 +261,20 @@ function FoodConfirm({ base, defaultMeal, onCancel, onConfirm }) {
   const servingGrams = base.grams || null;
   const servingLabel = (base.serving || '').trim();
   const hasUnitOption = !!servingGrams && !/ג[׳']?$/.test(servingLabel);
+  const altUnits = hasUnitOption ? (base.units || []).filter(u => u.grams && u.label) : [];
+  const multiUnit = altUnits.length > 0;
 
   const [unit, setUnit] = React.useState(servingGrams ? 'grams' : 'serving');
   const [grams, setGrams] = React.useState(servingGrams || 100);
   const [qty, setQty] = React.useState(1);
   const [meal, setMeal] = React.useState(defaultMeal || 'breakfast');
 
-  const ratio = unit === 'serving' ? qty : (servingGrams ? grams / servingGrams : qty);
+  const altUnit = altUnits.find(u => u.label === unit);
+  const unitLabel = unit === 'grams' ? 'ג׳' : unit === 'serving' ? (servingLabel || 'יחידות') : unit;
+  const gramsPerUnit = unit === 'serving' ? servingGrams : (altUnit ? altUnit.grams : servingGrams);
+  const ratio = unit === 'grams'
+    ? (servingGrams ? grams / servingGrams : grams / 100)
+    : (servingGrams ? qty * (gramsPerUnit / servingGrams) : qty);
   const k  = Math.round(base.kcal * ratio);
   const kp = Math.round(base.p * ratio);
   const kc = Math.round(base.c * ratio);
@@ -288,9 +296,12 @@ function FoodConfirm({ base, defaultMeal, onCancel, onConfirm }) {
         </div>
 
         {hasUnitOption && (
-          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-            <button onClick={() => setUnit('grams')} style={unitToggleBtn(unit === 'grams')}>גרמים</button>
-            <button onClick={() => setUnit('serving')} style={unitToggleBtn(unit === 'serving')}>{servingLabel || 'יחידות'}</button>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: multiUnit ? 'wrap' : 'nowrap' }}>
+            <button onClick={() => setUnit('grams')} style={unitToggleBtn(unit === 'grams', !multiUnit)}>גרמים</button>
+            <button onClick={() => setUnit('serving')} style={unitToggleBtn(unit === 'serving', !multiUnit)}>{servingLabel || 'יחידות'}</button>
+            {altUnits.map(u => (
+              <button key={u.label} onClick={() => setUnit(u.label)} style={unitToggleBtn(unit === u.label, !multiUnit)}>{u.label}</button>
+            ))}
           </div>
         )}
 
@@ -306,7 +317,7 @@ function FoodConfirm({ base, defaultMeal, onCancel, onConfirm }) {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, background: 'var(--card)', borderRadius: 18, padding: '12px 16px', marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 15.5, color: 'var(--ink)', fontWeight: 500 }}>{servingGrams ? `כמות ${servingLabel || 'יחידות'}` : 'כמות מנות'}</span>
+              <span style={{ fontSize: 15.5, color: 'var(--ink)', fontWeight: 500 }}>{servingGrams ? `כמות ${unitLabel}` : 'כמות מנות'}</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                 <button onClick={() => stepQty(-0.5)} style={stepBtn}><Icon.minus s={20} c="var(--green-deep)" /></button>
                 <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--ink)', minWidth: 36, textAlign: 'center' }}>{qty}</span>
@@ -314,7 +325,7 @@ function FoodConfirm({ base, defaultMeal, onCancel, onConfirm }) {
               </div>
             </div>
             {servingGrams && (
-              <div style={{ fontSize: 12, color: 'var(--ink-soft)', textAlign: 'end' }}>≈ {Math.round(qty * servingGrams)}ג׳</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)', textAlign: 'end' }}>≈ {Math.round(qty * gramsPerUnit)}ג׳</div>
             )}
           </div>
         )}
@@ -345,7 +356,12 @@ function FoodConfirm({ base, defaultMeal, onCancel, onConfirm }) {
           ))}
         </div>
 
-        <Btn onClick={() => onConfirm({ name: base.name, icon: base.icon || '🍽️', serving: base.serving, kcal: base.kcal, p: base.p, c: base.c, f: base.f, qty: ratio, meal })}>הוספה ליומן</Btn>
+        <Btn onClick={() => onConfirm({
+          name: base.name, icon: base.icon || '🍽️', serving: base.serving,
+          kcal: base.kcal, p: base.p, c: base.c, f: base.f, qty: ratio,
+          unitQty: unit === 'grams' ? grams : qty, unitLabel,
+          meal,
+        })}>הוספה ליומן</Btn>
       </div>
     </div>
   );

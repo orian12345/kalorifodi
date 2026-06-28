@@ -149,7 +149,7 @@ function FoodRow({ it, isLast, onRemove }) {
       <div style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{it.icon || '🍽️'}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.name}</div>
-        <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{it.qty !== 1 ? `${it.qty} × ` : ''}{it.serving} · ח{Math.round(it.p * it.qty)} פ{Math.round(it.c * it.qty)} ש{Math.round(it.f * it.qty)}</div>
+        <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{(it.unitQty ?? it.qty) !== 1 ? `${it.unitQty ?? it.qty} × ` : ''}{it.unitLabel || it.serving} · ח{Math.round(it.p * it.qty)} פ{Math.round(it.c * it.qty)} ש{Math.round(it.f * it.qty)}</div>
       </div>
       <div onClick={() => setOpen(o => !o)} style={{ textAlign: 'end', cursor: 'pointer' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, color: 'var(--ink)' }}>{Math.round(it.kcal * it.qty)}</div>
