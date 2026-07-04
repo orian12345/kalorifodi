@@ -15,7 +15,8 @@
     else if (p.goal === 'gain') tdee += 350;
     const calories = Math.max(1200, Math.round(tdee / 10) * 10);
     const proteinPerKg = p.goal === 'lose' ? 2.0 : p.goal === 'gain' ? 1.9 : 1.6;
-    const protein = Math.round(w * proteinPerKg);
+    const proteinWeight = (p.goal === 'lose' && p.targetWeight) ? +p.targetWeight : w;
+    const protein = Math.round(proteinWeight * proteinPerKg);
     const fat = Math.round((calories * 0.27) / 9);
     const carbs = Math.max(0, Math.round((calories - protein * 4 - fat * 9) / 4));
     const water = Math.round((w * 33) / 50) * 50; // ml, round to 50

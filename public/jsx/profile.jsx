@@ -144,7 +144,8 @@ function WeightWidget({ user, logs, onUpdate }) {
   const saveTarget = () => {
     const w = parseFloat(newTarget);
     if (!w || w < 20 || w > 300) { setEditT(false); return; }
-    onUpdate({ ...user, targetWeight: w });
+    const updated = { ...user, targetWeight: w };
+    onUpdate({ ...updated, targets: KP.calcTargets(updated) });
     setEditT(false);
   };
 
