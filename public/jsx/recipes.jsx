@@ -310,7 +310,7 @@ function RecipeTag({ label }) {
   );
 }
 
-function MacroBar({ kcal, protein, carbs, fat }) {
+function RecipeMacroBar({ kcal, protein, carbs, fat }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, margin: '16px 0' }}>
       {[['קלוריות', kcal, 'קק"ל', 'var(--green)'],
@@ -386,7 +386,7 @@ function Recipes({ initialCategory }) {
           {/* macros per serving */}
           <div style={{ marginTop:16 }}>
             <div style={{ fontSize:13, color:'var(--ink-soft)', fontWeight:600, marginBottom:4 }}>ערכים תזונתיים למנה</div>
-            <MacroBar kcal={recipe.kcal} protein={recipe.protein} carbs={recipe.carbs} fat={recipe.fat} />
+            <RecipeMacroBar kcal={recipe.kcal} protein={recipe.protein} carbs={recipe.carbs} fat={recipe.fat} />
           </div>
 
           {/* ingredients */}
