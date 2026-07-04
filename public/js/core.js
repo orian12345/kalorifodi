@@ -778,7 +778,8 @@
   function dayTotals(day) {
     const t = { kcal: 0, p: 0, c: 0, f: 0 };
     (day?.foods || []).forEach(it => {
-      t.kcal += it.kcal * it.qty; t.p += it.p * it.qty; t.c += it.c * it.qty; t.f += it.f * it.qty;
+      const q = +it.qty || 0;
+      t.kcal += (+it.kcal || 0) * q; t.p += (+it.p || 0) * q; t.c += (+it.c || 0) * q; t.f += (+it.f || 0) * q;
     });
     return { kcal: Math.round(t.kcal), p: Math.round(t.p), c: Math.round(t.c), f: Math.round(t.f) };
   }

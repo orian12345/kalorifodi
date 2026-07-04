@@ -401,7 +401,7 @@ function FoodConfirm({ base, defaultMeal, onCancel, onConfirm }) {
 
         <Btn onClick={() => onConfirm({
           name: base.name, icon: base.icon || '🍽️', serving: base.serving,
-          kcal: base.kcal, p: base.p, c: base.c, f: base.f, qty: ratio,
+          kcal: +base.kcal || 0, p: +base.p || 0, c: +base.c || 0, f: +base.f || 0, qty: ratio,
           unitQty: unit === 'grams' ? gramsNum : qty, unitLabel,
           meal,
         })}>הוספה ליומן</Btn>
