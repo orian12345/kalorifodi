@@ -62,21 +62,27 @@ function SearchTab({ gender, onPick }) {
   const g = (f, m) => G(gender, f, m);
   const [q, setQ] = React.useState('');
   const [online, setOnline]   = React.useState([]);
+  const [moh,    setMoh]      = React.useState([]);
   const [loading, setLoading] = React.useState(false);
 
   const localList = q.trim() ? KP.FOODS.filter(f => f.name.includes(q.trim())) : [];
 
   React.useEffect(() => {
     const query = q.trim();
-    if (query.length < 2) { setOnline([]); setLoading(false); return; }
+    if (query.length < 2) { setOnline([]); setMoh([]); setLoading(false); return; }
     setLoading(true);
     const t = setTimeout(async () => {
+      const headers = { 'Authorization': 'Bearer ' + API.token() };
+      const localNames = new Set(KP.FOODS.filter(f => f.name.includes(query)).map(f => f.name));
+
+      const [offResp, mohResp] = await Promise.allSettled([
+        fetch(`/api/food-search?q=${encodeURIComponent(query)}`, { headers }),
+        fetch(`/api/il-food-search?q=${encodeURIComponent(query)}`, { headers }),
+      ]);
+
+      // OpenFoodFacts
       try {
-        const resp = await fetch(`/api/food-search?q=${encodeURIComponent(query)}`, {
-          headers: { 'Authorization': 'Bearer ' + API.token() }
-        });
-        const data = await resp.json();
-        const localNames = new Set(KP.FOODS.filter(f => f.name.includes(query)).map(f => f.name));
+        const data = offResp.status === 'fulfilled' ? await offResp.value.json() : {};
         const parsed = (data.products || [])
           .filter(p => {
             const n = p.nutriments || {};
@@ -94,21 +100,30 @@ function SearchTab({ gender, onPick }) {
             const grams = gm ? Math.round(+gm[1]) : 100;
             const ratio = grams / 100;
             return {
-              id: 'off_' + (p.code || Math.random()),
-              name,
-              icon: '🌐',
+              id: 'off_' + (p.code || Math.random()), name, icon: '🌐',
               serving: `${grams}ג׳`,
-              kcal: Math.round(k100 * ratio),
-              p: Math.round(p100 * ratio),
-              c: Math.round(c100 * ratio),
-              f: Math.round(f100 * ratio),
-              grams,
-              brand: (p.brands || '').split(',')[0].trim(),
+              kcal: Math.round(k100 * ratio), p: Math.round(p100 * ratio),
+              c: Math.round(c100 * ratio),    f: Math.round(f100 * ratio),
+              grams, brand: (p.brands || '').split(',')[0].trim(),
             };
           })
           .filter(p => p.kcal > 0 && p.name.length > 1 && !localNames.has(p.name));
         setOnline(parsed);
       } catch { setOnline([]); }
+
+      // Israeli MOH database
+      try {
+        const data = mohResp.status === 'fulfilled' ? await mohResp.value.json() : {};
+        const allNames = new Set([...localNames]);
+        const mohParsed = (data.records || [])
+          .filter(r => r.kcal100 > 0 && r.name && r.name.length > 1 && !allNames.has(r.name))
+          .map(r => ({
+            id: 'moh_' + Math.random(), name: r.name, icon: '🇮🇱',
+            serving: '100ג׳', kcal: r.kcal100, p: r.p100, c: r.c100, f: r.f100, grams: 100,
+          }));
+        setMoh(mohParsed);
+      } catch { setMoh([]); }
+
       setLoading(false);
     }, 650);
     return () => clearTimeout(t);
@@ -173,8 +188,29 @@ function SearchTab({ gender, onPick }) {
           </>
         )}
 
+        {/* ── תוצאות ממאגר משרד הבריאות ── */}
+        {moh.length > 0 && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0' }}>
+              <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
+              <span style={{ fontSize: 11, color: 'var(--ink-soft)', fontWeight: 700, whiteSpace: 'nowrap' }}>🇮🇱 מאגר משרד הבריאות · 4,600+ מאכלים</span>
+              <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
+            </div>
+            {moh.map(f => (
+              <button key={f.id} onClick={() => onPick(f)} style={searchRow}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--water-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🇮🇱</div>
+                <div style={{ flex: 1, textAlign: 'start' }}>
+                  <div style={{ fontSize: 15.5, fontWeight: 500, color: 'var(--ink)' }}>{f.name}</div>
+                  <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{f.serving} · {f.kcal} קק״ל</div>
+                </div>
+                <div style={{ width: 30, height: 30, borderRadius: 10, background: 'var(--water-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon.plus s={18} c="var(--water)" /></div>
+              </button>
+            ))}
+          </>
+        )}
+
         {/* ── מצב ריק ── */}
-        {hasQuery && !loading && localList.length === 0 && online.length === 0 && (
+        {hasQuery && !loading && localList.length === 0 && online.length === 0 && moh.length === 0 && (
           <div style={{ textAlign: 'center', color: 'var(--ink-soft)', padding: '30px 0', fontSize: 14 }}>
             לא נמצא מאכל — {g('נסי', 'נסה')} להוסיף ידנית
           </div>

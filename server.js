@@ -158,6 +158,32 @@ app.get('/api/food-search', auth, (req, res) => {
   }).on('error', () => res.json({ products: [] }));
 });
 
+// ── Israeli MOH nutrition DB search ──────────────────────────
+app.get('/api/il-food-search', auth, (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (q.length < 2) return res.json({ records: [] });
+  const url = `https://data.gov.il/api/3/action/datastore_search?resource_id=c3cb0630-0650-46c1-a068-82d575c094b2&q=${encodeURIComponent(q)}&limit=10&fields=shmmitzrach,food_energy,protein,carbohydrates,total_fat`;
+  https.get(url, { headers: { 'User-Agent': 'KaloriFodi/1.0' } }, apiRes => {
+    let raw = '';
+    apiRes.on('data', d => raw += d);
+    apiRes.on('end', () => {
+      try {
+        const data = JSON.parse(raw);
+        const records = ((data.result || {}).records || [])
+          .filter(r => r.food_energy > 0 && r.shmmitzrach)
+          .map(r => ({
+            name: r.shmmitzrach.trim(),
+            kcal100: Math.round(+r.food_energy || 0),
+            p100:    Math.round(+r.protein      || 0),
+            c100:    Math.round(+r.carbohydrates|| 0),
+            f100:    Math.round(+r.total_fat    || 0),
+          }));
+        res.json({ records });
+      } catch { res.json({ records: [] }); }
+    });
+  }).on('error', () => res.json({ records: [] }));
+});
+
 // ── Meal recommendations ───────────────────────────────────
 app.post('/api/meal-recommendations', auth, async (req, res) => {
   try {
