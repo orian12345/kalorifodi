@@ -371,7 +371,7 @@
     { id:'gummies',        name:'סוכריות גומי',        icon:'🍬', serving:'10 יחידות',  kcal:90,  p:2,  c:22, f:0,  grams:28  },
     { id:'rice_pudding',   name:'ריזוגלו',             icon:'🍮', serving:'100ג',       kcal:110, p:3,  c:20, f:2,  grams:100 },
     { id:'chocolate_spread',name:'ממרח שוקולד',        icon:'🍫', serving:'כף',         kcal:100, p:1,  c:12, f:6,  grams:20  },
-    { id:'nutella',         name:'נוטלה',              icon:'🍫', serving:'כף',         kcal:108, p:1,  c:12, f:6,  grams:20  },
+    { id:'nutella',         name:'ממרח נוטלה',         icon:'🍫', serving:'כף',         kcal:108, p:1,  c:12, f:6,  grams:20  },
     { id:'hashachar_class', name:'ממרח שוקולד השחר קלאסי', icon:'🍫', serving:'כף',    kcal:101, p:1,  c:13, f:5,  grams:20  },
     { id:'hashachar_parve', name:'ממרח שוקולד השחר פרווה', icon:'🍫', serving:'כף',    kcal:109, p:1,  c:13, f:6,  grams:20  },
     { id:'marshmallow',    name:'מרשמלו',              icon:'🍬', serving:'5 יחידות',   kcal:90,  p:1,  c:23, f:0,  grams:28  },
