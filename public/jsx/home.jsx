@@ -6,6 +6,58 @@ const WORKOUT_KCAL_PER_MIN = {
   pilates_mat: 4, pilates_machine: 5, sport: 8, other: 5,
 };
 
+// ── Water reminder hook ─────────────────────────────────────
+function useWaterReminder() {
+  const STORE_KEY = 'kp_water_reminder';
+  const LAST_KEY  = 'kp_water_reminder_last';
+
+  const load = () => { try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch { return {}; } };
+
+  const [cfg, setCfg] = React.useState(load);
+  const timerRef = React.useRef(null);
+
+  const sendNotification = () => {
+    if (Notification.permission !== 'granted') return;
+    new Notification('💧 שתי מים!', {
+      body: 'אל תשכחי לשתות כוס מים ולסמן באפליקציה',
+      tag: 'kp-water',
+      requireInteraction: false,
+    });
+    localStorage.setItem(LAST_KEY, String(Date.now()));
+  };
+
+  React.useEffect(() => {
+    clearInterval(timerRef.current);
+    if (!cfg.enabled) return;
+    const ms = (cfg.hours || 1) * 60 * 60 * 1000;
+    const last = +(localStorage.getItem(LAST_KEY) || 0);
+    if (Date.now() - last > ms) sendNotification();
+    timerRef.current = setInterval(sendNotification, ms);
+    return () => clearInterval(timerRef.current);
+  }, [cfg.enabled, cfg.hours]);
+
+  const toggle = async (hours = cfg.hours || 1) => {
+    if (cfg.enabled) {
+      const next = { enabled: false, hours };
+      setCfg(next); localStorage.setItem(STORE_KEY, JSON.stringify(next));
+    } else {
+      if (!('Notification' in window)) { alert('הדפדפן שלך לא תומך בהתראות'); return; }
+      const perm = Notification.permission === 'granted'
+        ? 'granted' : await Notification.requestPermission();
+      if (perm !== 'granted') { alert('יש לאפשר התראות בהגדרות הדפדפן'); return; }
+      const next = { enabled: true, hours };
+      setCfg(next); localStorage.setItem(STORE_KEY, JSON.stringify(next));
+    }
+  };
+
+  const setHours = (h) => {
+    const next = { ...cfg, hours: h };
+    setCfg(next); localStorage.setItem(STORE_KEY, JSON.stringify(next));
+  };
+
+  return { enabled: !!cfg.enabled, hours: cfg.hours || 1, toggle, setHours };
+}
+
 function Home({ user, day, onAddFood, onWater, onRemoveFood, onOpenProfile }) {
   const t = user.targets;
   const tot = KP.dayTotals(day);
@@ -21,6 +73,8 @@ function Home({ user, day, onAddFood, onWater, onRemoveFood, onOpenProfile }) {
   const cupSize = 250;
   const cupsTarget = Math.round(t.water / cupSize);
   const cupsDone = Math.round(day.water / cupSize);
+  const reminder = useWaterReminder();
+  const [showReminderMenu, setShowReminderMenu] = React.useState(false);
 
   return (
     <div style={{ height: '100%', overflow: 'auto', background: 'var(--bg)', paddingBottom: 112 }}>
@@ -74,10 +128,44 @@ function Home({ user, day, onAddFood, onWater, onRemoveFood, onOpenProfile }) {
               <Icon.drop s={20} c="var(--water)" fill="var(--water-soft)" />
               <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--ink)' }}>מים</span>
             </div>
-            <span style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 600 }}>
-              {(day.water / 1000).toFixed(2)}<span style={{ color: 'var(--ink-soft)', fontWeight: 400 }}> / {(t.water / 1000).toFixed(1)} ליטר</span>
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 600 }}>
+                {(day.water / 1000).toFixed(2)}<span style={{ color: 'var(--ink-soft)', fontWeight: 400 }}> / {(t.water / 1000).toFixed(1)} ליטר</span>
+              </span>
+              <button onClick={() => setShowReminderMenu(m => !m)} title="תזכורת שתייה" style={{
+                border: 'none', cursor: 'pointer', width: 30, height: 30, borderRadius: 10, fontSize: 16,
+                background: reminder.enabled ? 'var(--water)' : 'var(--water-soft)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>🔔</button>
+            </div>
           </div>
+          {showReminderMenu && (
+            <div style={{ marginBottom: 12, background: 'var(--bg)', borderRadius: 14, padding: '10px 12px' }}>
+              <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 8 }}>
+                {reminder.enabled ? '🔔 תזכורת פעילה' : '🔕 תזכורת כבויה'} — בחרי תדירות:
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {[1, 1.5, 2, 3].map(h => {
+                  const label = h === 1 ? 'כל שעה' : h === 1.5 ? 'כל 90 דק׳' : h === 2 ? 'כל שעתיים' : 'כל 3 שעות';
+                  const active = reminder.enabled && reminder.hours === h;
+                  return (
+                    <button key={h} onClick={() => { reminder.setHours(h); if (!reminder.enabled) reminder.toggle(h); else { reminder.setHours(h); } }} style={{
+                      border: 'none', cursor: 'pointer', borderRadius: 10, padding: '6px 10px',
+                      fontSize: 12, fontFamily: 'var(--font-body)', fontWeight: active ? 700 : 400,
+                      background: active ? 'var(--water)' : 'var(--card)',
+                      color: active ? '#fff' : 'var(--ink-soft)',
+                    }}>{label}</button>
+                  );
+                })}
+                {reminder.enabled && (
+                  <button onClick={() => reminder.toggle()} style={{
+                    border: 'none', cursor: 'pointer', borderRadius: 10, padding: '6px 10px',
+                    fontSize: 12, fontFamily: 'var(--font-body)', background: 'var(--pink-soft)', color: 'var(--pink-deep)',
+                  }}>כבי</button>
+                )}
+              </div>
+            </div>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <button onClick={() => onWater(-cupSize)} style={waterBtn}><Icon.minus s={20} c="var(--water)" /></button>
             <div style={{ flex: 1, display: 'flex', gap: 5, justifyContent: 'center', flexWrap: 'wrap' }}>
