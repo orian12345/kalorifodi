@@ -256,6 +256,14 @@ function WeightWidget({ user, logs, onUpdate }) {
         )}
       </div>
 
+      {/* weight history chart */}
+      {user.weightHistory && user.weightHistory.length >= 2 && (
+        <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--line)' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600, marginBottom: 8 }}>📉 היסטוריית משקל</div>
+          <WeightHistoryChart history={user.weightHistory} target={user.targetWeight} />
+        </div>
+      )}
+
       {/* projection line chart */}
       {hasTarget && !reached && (
         <div style={{ marginTop: 16 }}>
@@ -305,6 +313,76 @@ function ForecastCell({ label, kg }) {
       </div>
       <div style={{ fontSize: 10.5, color: 'var(--ink-soft)', marginTop: 2 }}>{label}</div>
     </div>
+  );
+}
+
+function WeightHistoryChart({ history, target }) {
+  const sorted = [...history].sort((a, b) => a.date.localeCompare(b.date));
+  const W = 280, H = 90;
+  const padL = 38, padR = 14, padT = 14, padB = 22;
+  const cW = W - padL - padR, cH = H - padT - padB;
+
+  const weights  = sorted.map(e => +e.weight);
+  const allW     = target ? [...weights, +target] : weights;
+  const wMin     = Math.floor(Math.min(...allW) - 0.5);
+  const wMax     = Math.ceil(Math.max(...allW)  + 0.5);
+  const wRange   = wMax - wMin || 1;
+
+  const toX = i  => padL + (sorted.length < 2 ? cW / 2 : (i / (sorted.length - 1)) * cW);
+  const toY = w  => padT + cH - ((w - wMin) / wRange) * cH;
+
+  const pts = sorted.map((e, i) => [toX(i), toY(+e.weight)]);
+  const pathD = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${y}`).join(' ');
+
+  const yTicks = [wMin, Math.round((wMin + wMax) / 2), wMax];
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
+      {/* y-axis ticks */}
+      {yTicks.map(w => (
+        <g key={w}>
+          <line x1={padL - 4} y1={toY(w)} x2={W - padR} y2={toY(w)} stroke="var(--line)" strokeWidth="1" />
+          <text x={padL - 7} y={toY(w) + 4} textAnchor="end" fontSize="9" fill="var(--ink-soft)" fontFamily="Rubik">{w}</text>
+        </g>
+      ))}
+      {/* target line */}
+      {target && (
+        <line x1={padL} y1={toY(+target)} x2={W - padR} y2={toY(+target)}
+          stroke="var(--green)" strokeWidth="1.5" strokeDasharray="5 4" opacity="0.7" />
+      )}
+      {/* history line */}
+      {pts.length >= 2 && (
+        <path d={pathD} fill="none" stroke="var(--green-deep)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      )}
+      {/* dots */}
+      {pts.map(([x, y], i) => {
+        const last = i === pts.length - 1;
+        return (
+          <g key={i}>
+            <circle cx={x} cy={y} r={last ? 5.5 : 3.5}
+              fill={last ? 'var(--green)' : 'var(--card)'}
+              stroke={last ? 'var(--green-deep)' : 'var(--green)'} strokeWidth="2" />
+            {last && (
+              <text x={x} y={y - 9} textAnchor="middle" fontSize="9.5" fill="var(--green-deep)" fontFamily="Rubik" fontWeight="700">
+                {sorted[i].weight} ק״ג
+              </text>
+            )}
+          </g>
+        );
+      })}
+      {/* x-axis date labels */}
+      <text x={toX(0)} y={H - 2} textAnchor="middle" fontSize="9" fill="var(--ink-soft)" fontFamily="Rubik">
+        {sorted[0].date.slice(5).replace('-', '/')}
+      </text>
+      {sorted.length > 2 && (
+        <text x={toX(Math.floor(sorted.length / 2))} y={H - 2} textAnchor="middle" fontSize="9" fill="var(--ink-soft)" fontFamily="Rubik">
+          {sorted[Math.floor(sorted.length / 2)].date.slice(5).replace('-', '/')}
+        </text>
+      )}
+      <text x={toX(sorted.length - 1)} y={H - 2} textAnchor="middle" fontSize="9" fill="var(--ink-soft)" fontFamily="Rubik">
+        היום
+      </text>
+    </svg>
   );
 }
 
