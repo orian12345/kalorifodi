@@ -273,16 +273,16 @@ function FoodConfirm({ base, defaultMeal, onCancel, onConfirm }) {
   const altUnit = altUnits.find(u => u.label === unit);
   const unitLabel = unit === 'grams' ? 'ג׳' : unit === 'serving' ? (servingLabel || 'יחידות') : unit;
   const gramsPerUnit = unit === 'serving' ? servingGrams : (altUnit ? altUnit.grams : servingGrams);
+  const gramsNum = parseFloat(grams) || 0;
   const ratio = unit === 'grams'
-    ? (servingGrams ? grams / servingGrams : grams / 100)
+    ? (servingGrams ? gramsNum / servingGrams : gramsNum / 100)
     : (servingGrams ? qty * (gramsPerUnit / servingGrams) : qty);
   const k  = Math.round(base.kcal * ratio);
   const kp = Math.round(base.p * ratio);
   const kc = Math.round(base.c * ratio);
   const kf = Math.round(base.f * ratio);
 
-  const stepGrams = (d) => setGrams(g => Math.max(5, g + d));
-  const stepQty   = (d) => setQty(q => Math.max(0.5, Math.round((q + d) * 2) / 2));
+  const stepQty = (d) => setQty(q => Math.max(0.5, Math.round((q + d) * 2) / 2));
 
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 120, display: 'flex', flexDirection: 'column' }}>
@@ -311,10 +311,14 @@ function FoodConfirm({ base, defaultMeal, onCancel, onConfirm }) {
         {unit === 'grams' && servingGrams ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--card)', borderRadius: 18, padding: '12px 16px', marginBottom: 14 }}>
             <span style={{ fontSize: 15.5, color: 'var(--ink)', fontWeight: 500 }}>כמות בגרמים</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <button onClick={() => stepGrams(-10)} style={stepBtn}><Icon.minus s={20} c="var(--green-deep)" /></button>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--ink)', minWidth: 52, textAlign: 'center' }}>{grams}ג׳</span>
-              <button onClick={() => stepGrams(10)} style={stepBtn}><Icon.plus s={20} c="var(--green-deep)" /></button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input
+                type="number" inputMode="numeric"
+                value={grams}
+                onChange={e => setGrams(e.target.value)}
+                style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--ink)', width: 80, textAlign: 'center', border: 'none', background: 'var(--bg)', borderRadius: 10, padding: '4px 8px', outline: 'none' }}
+              />
+              <span style={{ fontSize: 16, color: 'var(--ink-soft)' }}>ג׳</span>
             </div>
           </div>
         ) : (
@@ -362,7 +366,7 @@ function FoodConfirm({ base, defaultMeal, onCancel, onConfirm }) {
         <Btn onClick={() => onConfirm({
           name: base.name, icon: base.icon || '🍽️', serving: base.serving,
           kcal: base.kcal, p: base.p, c: base.c, f: base.f, qty: ratio,
-          unitQty: unit === 'grams' ? grams : qty, unitLabel,
+          unitQty: unit === 'grams' ? gramsNum : qty, unitLabel,
           meal,
         })}>הוספה ליומן</Btn>
       </div>
