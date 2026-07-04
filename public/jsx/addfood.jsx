@@ -349,7 +349,7 @@ function FoodConfirm({ base, defaultMeal, onCancel, onConfirm }) {
             <span style={{ fontSize: 15.5, color: 'var(--ink)', fontWeight: 500 }}>כמות בגרמים</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <input
-                type="number" inputMode="numeric"
+                type="number" inputMode="decimal" step="0.5"
                 value={grams}
                 onChange={e => setGrams(e.target.value)}
                 style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--ink)', width: 80, textAlign: 'center', border: 'none', background: 'var(--bg)', borderRadius: 10, padding: '4px 8px', outline: 'none' }}
