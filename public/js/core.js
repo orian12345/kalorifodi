@@ -728,7 +728,7 @@
     { id:'white_choc_lindt', name:'שוקולד לבן לינדט',     icon:'🍫', serving:'2 קוביות',   kcal:111, p:1,  c:11, f:7,  grams:20  },
     { id:'white_choc_carmit',name:'שוקולד לבן כרמית',     icon:'🍫', serving:'2 קוביות',   kcal:106, p:1,  c:12, f:6,  grams:20  },
     // ── שוקולד ללא סוכר ──
-    { id:'sf_choc_white',    name:'שוקולד לבן ללא סוכר',  icon:'🍫', serving:'2 קוביות',   kcal:92,  p:1,  c:10, f:6,  grams:20  },
+    { id:'sf_choc_white',    name:'שוקולד לבן ללא סוכר',  icon:'🍫', serving:'2 קוביות',   kcal:98,  p:1,  c:11, f:7,  grams:20  },
     { id:'sf_choc_milk',     name:'שוקולד חלב ללא סוכר',  icon:'🍫', serving:'2 קוביות',   kcal:88,  p:1,  c:10, f:5,  grams:20  },
     { id:'sf_choc_dark',     name:'שוקולד מריר ללא סוכר', icon:'🍫', serving:'2 קוביות',   kcal:95,  p:2,  c:7,  f:8,  grams:20  },
     { id:'bambino',          name:'במבינו',               icon:'🍫', serving:'יחידה',      kcal:160, p:2,  c:21, f:8,  grams:37  },
