@@ -669,6 +669,8 @@
     { id:'van_mousse',       name:'מוס וניל',             icon:'🍮', serving:'גביע',       kcal:200, p:4,  c:27, f:8,  grams:150 },
     { id:'adanut',           name:'עדינית',               icon:'🍮', serving:'גביע',       kcal:130, p:4,  c:20, f:4,  grams:120 },
     { id:'yotvata_dessert',  name:'מעדן יוטבתה',          icon:'🍮', serving:'גביע',       kcal:175, p:5,  c:26, f:6,  grams:160 },
+    { id:'pro_zero_choc',    name:'מעדן PRO ZERO שוקולד', icon:'🍮', serving:'גביע',       kcal:123, p:13, c:12, f:2,  grams:150 },
+    { id:'pro_zero_white',   name:'מעדן PRO ZERO שוקולד לבן', icon:'🍮', serving:'גביע',  kcal:123, p:13, c:12, f:2,  grams:150 },
     { id:'rice_pud_van',     name:'ריזוגלו וניל',         icon:'🍮', serving:'100ג',       kcal:110, p:3,  c:20, f:2,  grams:100 },
     { id:'creme_caramel',    name:'קרם קרמל',             icon:'🍮', serving:'גביע',       kcal:180, p:4,  c:30, f:5,  grams:150 },
     { id:'panna_cotta',      name:'פאנה קוטה',            icon:'🍮', serving:'גביע',       kcal:200, p:4,  c:22, f:11, grams:150 },
