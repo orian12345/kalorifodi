@@ -717,8 +717,17 @@
     { id:'rafaello',         name:'רפאלו',                icon:'🍫', serving:'3 יחידות',   kcal:195, p:2,  c:18, f:13, grams:36  },
     { id:'nogah',            name:'נוגה',                 icon:'🍫', serving:'יחידה',      kcal:250, p:4,  c:30, f:13, grams:55  },
     { id:'kif_kef',          name:'קיף קף',               icon:'🍫', serving:'יחידה',      kcal:220, p:3,  c:27, f:11, grams:46  },
-    { id:'elite_choc',       name:'שוקולד אלית',          icon:'🍫', serving:'2 קוביות',   kcal:105, p:1,  c:13, f:6,  grams:20  },
+    { id:'elite_choc',       name:'שוקולד חלב אלית',      icon:'🍫', serving:'2 קוביות',   kcal:105, p:1,  c:13, f:6,  grams:20  },
     { id:'mekupelet',        name:'מקופלת',               icon:'🍫', serving:'יחידה',      kcal:91,  p:1,  c:10, f:5,  grams:17  },
+    // ── שוקולד לבן ──
+    { id:'white_choc_elite', name:'שוקולד לבן אלית',      icon:'🍫', serving:'2 קוביות',   kcal:106, p:1,  c:12, f:6,  grams:20  },
+    { id:'white_choc_milka', name:'שוקולד לבן מילקה',     icon:'🍫', serving:'2 קוביות',   kcal:105, p:1,  c:12, f:6,  grams:20  },
+    { id:'white_choc_lindt', name:'שוקולד לבן לינדט',     icon:'🍫', serving:'2 קוביות',   kcal:111, p:1,  c:11, f:7,  grams:20  },
+    { id:'white_choc_carmit',name:'שוקולד לבן כרמית',     icon:'🍫', serving:'2 קוביות',   kcal:106, p:1,  c:12, f:6,  grams:20  },
+    // ── שוקולד ללא סוכר ──
+    { id:'sf_choc_white',    name:'שוקולד לבן ללא סוכר',  icon:'🍫', serving:'2 קוביות',   kcal:92,  p:1,  c:10, f:6,  grams:20  },
+    { id:'sf_choc_milk',     name:'שוקולד חלב ללא סוכר',  icon:'🍫', serving:'2 קוביות',   kcal:88,  p:1,  c:10, f:5,  grams:20  },
+    { id:'sf_choc_dark',     name:'שוקולד מריר ללא סוכר', icon:'🍫', serving:'2 קוביות',   kcal:95,  p:2,  c:7,  f:8,  grams:20  },
     { id:'bambino',          name:'במבינו',               icon:'🍫', serving:'יחידה',      kcal:160, p:2,  c:21, f:8,  grams:37  },
     { id:'choco_pie',        name:'שוקו פאי',             icon:'🍫', serving:'יחידה',      kcal:125, p:1,  c:20, f:5,  grams:35  },
     { id:'after_eight',      name:'אפטר אייט',            icon:'🍫', serving:'3 יחידות',   kcal:70,  p:0,  c:13, f:2,  grams:16  },
