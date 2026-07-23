@@ -496,6 +496,56 @@ function Chip({ children, on, onClick }) {
   );
 }
 
+// ── Body diagram SVG ────────────────────────────────────────
+function BodyDiagram() {
+  const fill   = 'var(--green-soft)';
+  const stroke = 'var(--ink-soft)';
+  return (
+    <svg viewBox="0 0 230 310" style={{ width:'100%', maxHeight:250, height:'auto', display:'block' }}>
+      {/* Head */}
+      <circle cx="100" cy="28" r="20" fill={fill} stroke={stroke} strokeWidth="1.8" />
+      {/* Neck */}
+      <rect x="92" y="48" width="16" height="16" rx="4" fill={fill} stroke={stroke} strokeWidth="1.5" />
+      {/* Left arm */}
+      <ellipse cx="32" cy="110" rx="13" ry="38" fill={fill} stroke={stroke} strokeWidth="1.8" transform="rotate(-8,32,110)" />
+      {/* Right arm */}
+      <ellipse cx="168" cy="110" rx="13" ry="38" fill={fill} stroke={stroke} strokeWidth="1.8" transform="rotate(8,168,110)" />
+      {/* Torso + legs */}
+      <path
+        d="M 52,64 C 42,70 40,82 46,96 C 40,112 50,122 58,128 C 46,140 40,150 42,158 L 50,175 L 66,285 L 84,285 L 84,220 C 88,210 96,207 100,207 C 104,207 112,210 116,220 L 116,285 L 134,285 L 150,175 L 158,158 C 160,150 154,140 142,128 C 150,122 160,112 154,96 C 160,82 158,70 148,64 Z"
+        fill={fill} stroke={stroke} strokeWidth="1.8"
+      />
+
+      {/* ── Arm (purple) ── */}
+      <line x1="18" y1="110" x2="46" y2="110" stroke="#a78bfa" strokeWidth="2" strokeDasharray="4 2.5" />
+      <line x1="154" y1="110" x2="182" y2="110" stroke="#a78bfa" strokeWidth="2" strokeDasharray="4 2.5" />
+      <line x1="182" y1="110" x2="192" y2="78" stroke="#a78bfa" strokeWidth="0.9" opacity="0.6" />
+      <text x="194" y="82" fontSize="9.5" fill="#a78bfa" fontFamily="Rubik" fontWeight="700" textAnchor="start">זרוע</text>
+
+      {/* ── Chest (pink) ── */}
+      <line x1="46" y1="96" x2="154" y2="96" stroke="var(--pink)" strokeWidth="2" strokeDasharray="4 2.5" />
+      <line x1="154" y1="96" x2="192" y2="96" stroke="var(--pink)" strokeWidth="0.9" opacity="0.6" />
+      <text x="194" y="100" fontSize="9.5" fill="var(--pink)" fontFamily="Rubik" fontWeight="700" textAnchor="start">חזה</text>
+
+      {/* ── Waist (green) ── */}
+      <line x1="58" y1="128" x2="142" y2="128" stroke="var(--green)" strokeWidth="2" strokeDasharray="4 2.5" />
+      <line x1="142" y1="128" x2="192" y2="128" stroke="var(--green)" strokeWidth="0.9" opacity="0.6" />
+      <text x="194" y="132" fontSize="9.5" fill="var(--green)" fontFamily="Rubik" fontWeight="700" textAnchor="start">מותניים</text>
+
+      {/* ── Hips (blue) ── */}
+      <line x1="42" y1="158" x2="158" y2="158" stroke="var(--water)" strokeWidth="2" strokeDasharray="4 2.5" />
+      <line x1="158" y1="158" x2="192" y2="158" stroke="var(--water)" strokeWidth="0.9" opacity="0.6" />
+      <text x="194" y="162" fontSize="9.5" fill="var(--water)" fontFamily="Rubik" fontWeight="700" textAnchor="start">ירכיים</text>
+
+      {/* ── Thigh (orange) ── */}
+      <line x1="62" y1="220" x2="82" y2="220" stroke="var(--carb)" strokeWidth="2" strokeDasharray="4 2.5" />
+      <line x1="118" y1="220" x2="138" y2="220" stroke="var(--carb)" strokeWidth="2" strokeDasharray="4 2.5" />
+      <line x1="138" y1="220" x2="192" y2="220" stroke="var(--carb)" strokeWidth="0.9" opacity="0.6" />
+      <text x="194" y="224" fontSize="9.5" fill="var(--carb)" fontFamily="Rubik" fontWeight="700" textAnchor="start">ירך</text>
+    </svg>
+  );
+}
+
 // ── Measurements widget ─────────────────────────────────────
 const MEAS_TYPES = [
   { id: 'waist',  label: 'מותניים' },
@@ -507,9 +557,10 @@ const MEAS_TYPES = [
 
 function MeasurementsWidget({ user, onUpdate }) {
   const g = (f, m) => G(user.gender, f, m);
-  const [editing, setEditing]   = React.useState(false);
-  const [form, setForm]         = React.useState({});
-  const [selected, setSelected] = React.useState('waist');
+  const [editing, setEditing]     = React.useState(false);
+  const [form, setForm]           = React.useState({});
+  const [selected, setSelected]   = React.useState('waist');
+  const [showDiagram, setShowDiagram] = React.useState(false);
 
   const history = (user.measurementsHistory || []).sort((a, b) => a.date.localeCompare(b.date));
   const latest  = history.length > 0 ? history[history.length - 1].meas : null;
@@ -545,6 +596,15 @@ function MeasurementsWidget({ user, onUpdate }) {
 
       {editing ? (
         <div>
+          {/* diagram toggle */}
+          <button onClick={() => setShowDiagram(d => !d)} style={{ border:'none', background:'var(--bg)', borderRadius:10, padding:'6px 12px', fontSize:12.5, color:'var(--ink-soft)', cursor:'pointer', fontFamily:'var(--font-body)', fontWeight:600, marginBottom:12, display:'flex', alignItems:'center', gap:5 }}>
+            📍 {showDiagram ? 'הסתר מדריך' : 'איפה למדוד?'}
+          </button>
+          {showDiagram && (
+            <div style={{ marginBottom:14, padding:'8px 4px 0' }}>
+              <BodyDiagram />
+            </div>
+          )}
           {MEAS_TYPES.map(t => (
             <div key={t.id} style={{ marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg)', borderRadius: 14, padding: '10px 14px' }}>
               <span style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 500 }}>{t.label}</span>
@@ -607,6 +667,18 @@ function MeasurementsWidget({ user, onUpdate }) {
               <MeasurementChart data={histForSel} />
             </div>
           )}
+
+          {/* diagram toggle */}
+          <div style={{ borderTop: '1px solid var(--line)', marginTop: 12, paddingTop: 10 }}>
+            <button onClick={() => setShowDiagram(d => !d)} style={{ border:'none', background:'transparent', padding:'4px 0', fontSize:12.5, color:'var(--ink-soft)', cursor:'pointer', fontFamily:'var(--font-body)', fontWeight:600, display:'flex', alignItems:'center', gap:5 }}>
+              📍 {showDiagram ? 'הסתר מדריך' : 'איפה למדוד?'}
+            </button>
+            {showDiagram && (
+              <div style={{ marginTop: 10 }}>
+                <BodyDiagram />
+              </div>
+            )}
+          </div>
         </div>
       )}
     </Card>
