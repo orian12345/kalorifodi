@@ -34,6 +34,11 @@ function Profile({ user, logs, onUpdate, onReset }) {
         <WeightWidget user={user} logs={logs} onUpdate={onUpdate} />
       </div>
 
+      {/* ── measurements ── */}
+      <div style={{ padding: '16px 18px 0' }}>
+        <MeasurementsWidget user={user} onUpdate={onUpdate} />
+      </div>
+
       {/* ── daily targets ── */}
       <div style={{ padding: '16px 18px 0' }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', margin: '0 4px 10px' }}>היעדים היומיים</div>
@@ -488,6 +493,179 @@ function Chip({ children, on, onClick }) {
       background: on ? 'var(--green)' : 'var(--bg)', color: on ? '#fff' : 'var(--ink)',
       fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-body)', transition: 'all .2s',
     }}>{children}</button>
+  );
+}
+
+// ── Measurements widget ─────────────────────────────────────
+const MEAS_TYPES = [
+  { id: 'waist',  label: 'מותניים' },
+  { id: 'hips',   label: 'ירכיים'  },
+  { id: 'chest',  label: 'חזה'     },
+  { id: 'thigh',  label: 'ירך'     },
+  { id: 'arm',    label: 'זרוע'    },
+];
+
+function MeasurementsWidget({ user, onUpdate }) {
+  const g = (f, m) => G(user.gender, f, m);
+  const [editing, setEditing]   = React.useState(false);
+  const [form, setForm]         = React.useState({});
+  const [selected, setSelected] = React.useState('waist');
+
+  const history = (user.measurementsHistory || []).sort((a, b) => a.date.localeCompare(b.date));
+  const latest  = history.length > 0 ? history[history.length - 1].meas : null;
+  const prev    = history.length > 1 ? history[history.length - 2].meas : null;
+  const hasAny  = latest && MEAS_TYPES.some(t => latest[t.id]);
+
+  const startEdit = () => { setForm(latest || {}); setEditing(true); };
+
+  const save = () => {
+    const cleaned = {};
+    MEAS_TYPES.forEach(t => { const v = parseFloat(form[t.id]); if (v > 0) cleaned[t.id] = v; });
+    if (Object.keys(cleaned).length === 0) { setEditing(false); return; }
+    const today = KP.TODAY();
+    const newHist = [...history.filter(e => e.date !== today), { date: today, meas: cleaned }];
+    onUpdate({ ...user, measurementsHistory: newHist });
+    setEditing(false);
+  };
+
+  const histForSel = history
+    .map(e => ({ date: e.date, value: e.meas[selected] }))
+    .filter(e => e.value > 0);
+
+  return (
+    <Card>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)' }}>📐 היקפים</span>
+        {!editing && (
+          <button onClick={startEdit} style={{ border: 'none', background: 'var(--green-soft)', borderRadius: 10, padding: '6px 14px', fontSize: 13, fontWeight: 600, color: 'var(--green-deep)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+            {hasAny ? 'עדכון' : g('הוסיפי', 'הוסף')}
+          </button>
+        )}
+      </div>
+
+      {editing ? (
+        <div>
+          {MEAS_TYPES.map(t => (
+            <div key={t.id} style={{ marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg)', borderRadius: 14, padding: '10px 14px' }}>
+              <span style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 500 }}>{t.label}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  type="number" inputMode="decimal" value={form[t.id] || ''}
+                  onChange={e => setForm(f => ({ ...f, [t.id]: e.target.value }))}
+                  placeholder="—"
+                  style={{ width: 62, border: 'none', background: 'var(--card)', borderRadius: 10, padding: '7px 8px', fontSize: 17, fontFamily: 'var(--font-display)', color: 'var(--green-deep)', outline: 'none', textAlign: 'center' }}
+                />
+                <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>ס״מ</span>
+              </div>
+            </div>
+          ))}
+          <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+            <Btn variant="ghost" onClick={() => setEditing(false)} style={{ flex: 1 }}>ביטול</Btn>
+            <Btn onClick={save} style={{ flex: 1 }}>שמירה</Btn>
+          </div>
+        </div>
+      ) : !hasAny ? (
+        <div style={{ textAlign: 'center', color: 'var(--ink-soft)', fontSize: 13.5, padding: '16px 0' }}>
+          {g('הוסיפי', 'הוסף')} את המדידות הראשונות שלך 📏
+        </div>
+      ) : (
+        <div>
+          {/* current values grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
+            {MEAS_TYPES.filter(t => latest[t.id]).map(t => {
+              const diff = prev && prev[t.id] ? +(latest[t.id] - prev[t.id]).toFixed(1) : null;
+              const isSelected = selected === t.id;
+              const isDown = diff !== null && diff < 0;
+              const isUp   = diff !== null && diff > 0;
+              return (
+                <div key={t.id} onClick={() => setSelected(t.id)} style={{
+                  background: isSelected ? 'var(--green-soft)' : 'var(--bg)',
+                  borderRadius: 14, padding: '10px 6px', textAlign: 'center', cursor: 'pointer',
+                  border: isSelected ? '1.5px solid var(--green)' : '1.5px solid transparent',
+                  transition: 'all .2s',
+                }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: isSelected ? 'var(--green-deep)' : 'var(--ink)' }}>
+                    {latest[t.id]}
+                  </div>
+                  <div style={{ fontSize: 10.5, color: 'var(--ink-soft)', marginTop: 1 }}>{t.label} ס״מ</div>
+                  {diff !== null && diff !== 0 && (
+                    <div style={{ fontSize: 10, fontWeight: 700, marginTop: 3, color: isDown ? 'var(--green-deep)' : 'var(--pink-deep)' }}>
+                      {isDown ? '▼' : '▲'} {Math.abs(diff)}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* chart */}
+          {histForSel.length >= 2 && (
+            <div style={{ borderTop: '1px solid var(--line)', paddingTop: 14 }}>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', fontWeight: 600, marginBottom: 8 }}>
+                📉 {MEAS_TYPES.find(t => t.id === selected)?.label}
+              </div>
+              <MeasurementChart data={histForSel} />
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function MeasurementChart({ data }) {
+  const W = 280, H = 90;
+  const padL = 42, padR = 14, padT = 14, padB = 22;
+  const cW = W - padL - padR, cH = H - padT - padB;
+
+  const vals  = data.map(e => +e.value);
+  const vMin  = Math.floor(Math.min(...vals) - 1);
+  const vMax  = Math.ceil(Math.max(...vals)  + 1);
+  const vRange = vMax - vMin || 1;
+
+  const toX = i => padL + (data.length < 2 ? cW / 2 : (i / (data.length - 1)) * cW);
+  const toY = v => padT + cH - ((v - vMin) / vRange) * cH;
+
+  const pts   = data.map((e, i) => [toX(i), toY(+e.value)]);
+  const pathD = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${y}`).join(' ');
+  const yTicks = [vMin, Math.round((vMin + vMax) / 2), vMax];
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
+      {yTicks.map(v => (
+        <g key={v}>
+          <line x1={padL - 4} y1={toY(v)} x2={W - padR} y2={toY(v)} stroke="var(--line)" strokeWidth="1" />
+          <text x={padL - 7} y={toY(v) + 4} textAnchor="end" fontSize="9" fill="var(--ink-soft)" fontFamily="Rubik">{v}</text>
+        </g>
+      ))}
+      <path d={pathD} fill="none" stroke="var(--green-deep)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      {pts.map(([x, y], i) => {
+        const last = i === pts.length - 1;
+        return (
+          <g key={i}>
+            <circle cx={x} cy={y} r={last ? 5.5 : 3.5}
+              fill={last ? 'var(--green)' : 'var(--card)'}
+              stroke={last ? 'var(--green-deep)' : 'var(--green)'} strokeWidth="2" />
+            {last && (
+              <text x={x} y={y - 9} textAnchor="middle" fontSize="9.5" fill="var(--green-deep)" fontFamily="Rubik" fontWeight="700">
+                {data[i].value} ס״מ
+              </text>
+            )}
+          </g>
+        );
+      })}
+      <text x={toX(0)} y={H - 2} textAnchor="middle" fontSize="9" fill="var(--ink-soft)" fontFamily="Rubik">
+        {data[0].date.slice(5).replace('-', '/')}
+      </text>
+      {data.length > 2 && (
+        <text x={toX(Math.floor(data.length / 2))} y={H - 2} textAnchor="middle" fontSize="9" fill="var(--ink-soft)" fontFamily="Rubik">
+          {data[Math.floor(data.length / 2)].date.slice(5).replace('-', '/')}
+        </text>
+      )}
+      <text x={toX(data.length - 1)} y={H - 2} textAnchor="middle" fontSize="9" fill="var(--ink-soft)" fontFamily="Rubik">
+        היום
+      </text>
+    </svg>
   );
 }
 
